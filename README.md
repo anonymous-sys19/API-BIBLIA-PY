@@ -95,5 +95,6 @@ def registrar_video_youtube(url_youtube):
 registrar_video_youtube("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
 ```
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/anonymous-sys19/API-BIBLIA-PY)
 ---
 © 2026 GhostRoot Bible Project. Desarrollado para la excelencia en la difusión de la Palabra.
