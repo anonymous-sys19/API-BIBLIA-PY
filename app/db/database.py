@@ -180,7 +180,7 @@ class StreamManager:
                 "INSERT INTO streams (nombre, url_stream, pais, genero, logo_url, status) VALUES (?, ?, ?, ?, ?, ?)",
                 [radio.nombre, url, radio.pais, radio.genero, radio.logo_url, radio.status]
             )
-            return cursor.last_insert_rowid
+            return cursor.lastrowid
 
     def listar_radios(self) -> List[RadioStream]:
         with self._get_connection() as conn:
@@ -242,7 +242,7 @@ class VideoManager:
                 "INSERT OR IGNORE INTO videos (video_id, titulo, canal_autor, tipo, miniatura_url) VALUES (?, ?, ?, ?, ?)",
                 [video.video_id, video.titulo, video.canal_autor, video.tipo, video.miniatura_url]
             )
-            return cursor.last_insert_rowid
+            return cursor.lastrowid
 
     def listar_videos(self) -> List[Video]:
         with self._get_connection() as conn:
