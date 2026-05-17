@@ -1,0 +1,37 @@
+
+# Configuración personalizada para Ollama
+models:
+  - name: Qwen Pro Local
+    provider: ollama
+    model: qwen-pro # El nombre que le diste en 'ollama create'
+    apiBase: http://localhost:11434
+
+# Configuración para que te sugiera código mientras escribes (Autocompletado)
+tabAutocompleteModel:
+  name: Qwen Autocomplete
+  provider: ollama
+  model: qwen-2.5
+
+# Proveedores de contexto (Permiten al modelo leer tus archivos o docs)
+contextProviders:
+  - name: code
+  - name: docs
+  - name: diff
+  - name: terminal
+
+# Si quieres usar el mismo modelo para todo, puedes definirlo aquí y se usará por defecto
+models:
+  - name: Qwen3 Pro (General)
+    provider: ollama
+    model: qwen3
+    
+  - name: Qwen3 (Security/RedTeam)
+    provider: ollama
+    model: qwen3
+    apiBase: http://localhost:11434
+
+# Dejaremos el autocompletado con el modelo más ligero
+tabAutocompleteModel:
+  name: Qwen3 Fast
+  provider: ollama
+  model: qwen3

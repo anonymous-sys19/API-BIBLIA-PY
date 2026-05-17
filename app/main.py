@@ -6,19 +6,26 @@ from fastapi import FastAPI, HTTPException
 from app.db.models import RadioStream, Video, normalizar, BIBLIAS_VERSIONES
 import re
 import httpx
+import os
+from dotenv import load_dotenv
 
 from app.files.doc.doc import doc_api_json
-# nos aseguramos el cors para que cualquier frontend pueda consumir la API sin problemas
 from fastapi.middleware.cors import CORSMiddleware
 
+load_dotenv()
+
 app = FastAPI(title="API BIBLICA - GHOSTROOT DEV")
-BIBLIAS = BIBLIAS_VERSIONES() #agregamos todas las versiones de la biblia  a modelos
-engine = BibliaEngine(BIBLIAS) # Inicializamos el motor con las versiones de la biblia
+BIBLIAS = BIBLIAS_VERSIONES()
+engine = BibliaEngine(BIBLIAS)
 
+TURSO_DB_URL = os.getenv("TURSO_DB_URL", "")
+TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN", "")
 
-stream_engine = StreamManager("app/files/radio.sqlite")
-video_engine = VideoManager("app/files/radio.sqlite")  # Usamos el mismo SQLite para simplicidad
+stream_engine = StreamManager(TURSO_DB_URL, TURSO_AUTH_TOKEN)
+video_engine = VideoManager(TURSO_DB_URL, TURSO_AUTH_TOKEN)
 
+from app.admin import admin_routes
+admin_routes(app)
 
 # Configuración CORS para permitir acceso desde cualquier origen
 app.add_middleware(
@@ -126,15 +133,10 @@ def get_verse(libro: str, capitulo: int, versiculo: int, version: Optional[str] 
 
 @app.get("/stream", tags=["Streaming"])
 def listar_radios():
-    """Endpoint para que tu web muestre todas las radios[cite: 2]."""
     return stream_engine.listar_radios()
 
 @app.post("/stream/add", tags=["Streaming"])
 def nueva_radio(radio: RadioStream):
-    """
-    Agrega una radio. 
-    Ejemplo de JSON: {"nombre": "Radio Vida", "url_stream": "https://..."}[cite: 1, 2]
-    """
     radio_id = stream_engine.agregar_radio(radio)
     if radio_id:
         return {"status": "success", "id": radio_id, "mensaje": "Radio agregada"}
@@ -142,14 +144,12 @@ def nueva_radio(radio: RadioStream):
 
 @app.delete("/stream/{radio_id}", tags=["Streaming"])
 def borrar_radio(radio_id: int):
-    """Elimina una radio si ya no funciona[cite: 2]."""
     if stream_engine.eliminar_radio(radio_id):
         return {"mensaje": "Radio eliminada"}
     raise HTTPException(status_code=404, detail="No se encontró la radio")
 
 @app.put("/stream/{radio_id}", tags=["Streaming"])
 def editar_radio(radio_id: int, radio: RadioStream):
-    """Actualiza datos de una radio[cite: 1]."""
     if stream_engine.editar_radio(radio_id, radio):
         return {"mensaje": "Radio actualizada"}
     raise HTTPException(status_code=404, detail="No se encontró la radio")
@@ -175,12 +175,8 @@ def obtener_videos():
 
 @app.post("/videos/add", tags=["Videos"])
 async def registrar_video(url: str):
-    """
-    Recibe la URL, extrae el ID y busca automáticamente el título y miniatura.
-    """
     v_id = extraer_youtube_id(url)
     
-    # Consultamos datos básicos a YouTube (oEmbed) sin necesidad de API KEY
     async with httpx.AsyncClient() as client:
         res = await client.get(f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={v_id}&format=json")
         if res.status_code != 200:
@@ -206,7 +202,6 @@ def borrar_video(id: int):
     raise HTTPException(status_code=404, detail="Video no encontrado")
 @app.put("/videos/{id}", tags=["Videos"])
 def editar_video(id: int, video: Video):
-    """Actualiza metadatos de un video (título, autor, miniatura)."""
     if video_engine.editar_video(id, video):
         return {"mensaje": "Video actualizado"}
     raise HTTPException(status_code=404, detail="Video no encontrado")

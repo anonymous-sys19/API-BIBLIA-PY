@@ -1,0 +1,39 @@
+# Configuración personalizada para Ollama
+models:
+  - name: Qwen3 Pro
+    provider: ollama
+    model: qwen3 # El nombre que le diste en 'ollama create'
+    apiBase: http://localhost:11434
+
+# Configuración para que te sugiera código mientras escribes (Autocompletado)
+tabAutocompleteModel:
+  name: Qwen Autocomplete
+  provider: ollama
+  model: qwen3
+
+# Proveedores de contexto (Permiten al modelo leer tus archivos o docs)
+contextProviders:
+  - name: code
+  - name: docs
+  - name: diff
+  - name: terminal
+
+# Configuración personalizada para Ollama
+models:
+  - name: Qwen2.5 Local
+    provider: ollama
+    model: qwen2.5 # El nombre que le diste en 'ollama create'
+    apiBase: http://localhost:11434
+
+# Configuración para que te sugiera código mientras escribes (Autocompletado)
+tabAutocompleteModel:
+  name: Qwen Autocomplete
+  provider: ollama
+  model: qwen2.5
+
+# Proveedores de contexto (Permiten al modelo leer tus archivos o docs)
+contextProviders:
+  - name: code
+  - name: docs
+  - name: diff
+  - name: terminal

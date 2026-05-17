@@ -3,6 +3,7 @@ import random
 from datetime import datetime
 from typing import List, Dict, Optional
 from contextlib import contextmanager
+import libsql
 from app.db.models import RadioStream, Video, normalizar, Verso
 
 
@@ -162,59 +163,43 @@ class BibliaEngine:
 
 
 class StreamManager:
-    def __init__(self, db_path: str):
-        self.db_path = db_path
+    def __init__(self, db_url: str, auth_token: str):
+        self.db_url = db_url
+        self.auth_token = auth_token
 
     def _get_connection(self):
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row # Para que nos devuelva diccionarios
-        return conn
+        return libsql.connect(self.db_url, auth_token=self.auth_token)
 
     def agregar_radio(self, radio: RadioStream) -> int:
-        """Guarda una nueva radio y retorna su ID[cite: 1, 3]."""
-        # Limpieza básica de URL para sistemas tipo Centova[cite: 1]
         url = radio.url_stream.strip()
         if not url.endswith('/') and ":" in url:
-            url += "/;" # El '; ' ayuda a algunos reproductores con Shoutcast[cite: 1]
+            url += "/;"
 
         with self._get_connection() as conn:
-            cursor = conn.cursor()
-            # cursor.execute("INSERT INTO streams (nombre, url_stream, pais, genero, logo_url, status) VALUES (?, ?, ?, ?, ?, ?)")
-           
-            cursor.execute("INSERT INTO streams (nombre, url_stream, pais, genero, logo_url, status) VALUES (?, ?, ?, ?, ?, ?)", (
-                radio.nombre, url, radio.pais, 
-                radio.genero, radio.logo_url, radio.status
-            ))
-            conn.commit()
-            return cursor.lastrowid # type: ignore
-        
+            cursor = conn.execute(
+                "INSERT INTO streams (nombre, url_stream, pais, genero, logo_url, status) VALUES (?, ?, ?, ?, ?, ?)",
+                [radio.nombre, url, radio.pais, radio.genero, radio.logo_url, radio.status]
+            )
+            return cursor.last_insert_rowid
+
     def listar_radios(self) -> List[RadioStream]:
-        """Obtiene todas las radios registradas[cite: 1, 2]."""
         with self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM streams ORDER BY nombre ASC")
-            return [RadioStream(**dict(row)) for row in cursor.fetchall()]
+            result = conn.execute("SELECT * FROM streams ORDER BY nombre ASC")
+            columns = [desc[0] for desc in result.description]
+            rows = result.fetchall()
+            return [RadioStream(**{col: val for col, val in zip(columns, row)}) for row in rows]
 
     def eliminar_radio(self, radio_id: int) -> bool:
-        """Elimina una radio por su ID[cite: 1, 3]."""
         with self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM streams WHERE id = ?", (radio_id,))
-            conn.commit()
+            cursor = conn.execute("DELETE FROM streams WHERE id = ?", [radio_id])
             return cursor.rowcount > 0
+
     def editar_radio(self, radio_id: int, radio: RadioStream) -> bool:
-        """Edita los detalles de una radio existente[cite: 1, 3]."""
         with self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE streams 
-                SET nombre = ?, url_stream = ?, pais = ?, genero = ?, logo_url = ?, status = ?
-                WHERE id = ?
-            """, (
-                radio.nombre, radio.url_stream, radio.pais, 
-                radio.genero, radio.logo_url, radio.status, radio_id
-            ))
-            conn.commit()
+            cursor = conn.execute(
+                "UPDATE streams SET nombre = ?, url_stream = ?, pais = ?, genero = ?, logo_url = ?, status = ? WHERE id = ?",
+                [radio.nombre, radio.url_stream, radio.pais, radio.genero, radio.logo_url, radio.status, radio_id]
+            )
             return cursor.rowcount > 0
         
 
@@ -244,52 +229,38 @@ class StreamManager:
 # Al final de app/db/database.py
 
 class VideoManager:
-    def __init__(self, db_path: str):
-        self.db_path = db_path
+    def __init__(self, db_url: str, auth_token: str):
+        self.db_url = db_url
+        self.auth_token = auth_token
 
     def _get_connection(self):
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
+        return libsql.connect(self.db_url, auth_token=self.auth_token)
 
     def agregar_video(self, video: Video) -> int:
-        """Guarda un video y retorna su ID. video_id debe ser único."""
         with self._get_connection() as conn:
-            cursor = conn.cursor()
-            sql = """
-                INSERT OR IGNORE INTO videos (video_id, titulo, canal_autor, tipo, miniatura_url)
-                VALUES (?, ?, ?, ?, ?)
-            """
-            cursor.execute(sql, (
-                video.video_id, video.titulo, video.canal_autor, 
-                video.tipo, video.miniatura_url
-            ))
-            conn.commit()
-            return cursor.lastrowid # type: ignore
+            cursor = conn.execute(
+                "INSERT OR IGNORE INTO videos (video_id, titulo, canal_autor, tipo, miniatura_url) VALUES (?, ?, ?, ?, ?)",
+                [video.video_id, video.titulo, video.canal_autor, video.tipo, video.miniatura_url]
+            )
+            return cursor.last_insert_rowid
 
     def listar_videos(self) -> List[Video]:
-        """Obtiene la lista de videos registrados."""
         with self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM videos ORDER BY fecha_registro DESC")
-            return [Video(**dict(row)) for row in cursor.fetchall()]
+            result = conn.execute("SELECT * FROM videos ORDER BY fecha_registro DESC")
+            columns = [desc[0] for desc in result.description]
+            rows = result.fetchall()
+            return [Video(**{col: val for col, val in zip(columns, row)}) for row in rows]
 
     def eliminar_video(self, video_id_db: int) -> bool:
-        """Elimina un video por su ID primario."""
         with self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM videos WHERE id = ?", (video_id_db,))
-            conn.commit()
+            cursor = conn.execute("DELETE FROM videos WHERE id = ?", [video_id_db])
             return cursor.rowcount > 0
 
     def editar_video(self, id_db: int, video: Video) -> bool:
-        """Actualiza los metadatos de un video."""
         with self._get_connection() as conn:
-            cursor = conn.cursor()
-            sql = """
-                UPDATE videos SET titulo = ?, canal_autor = ?, miniatura_url = ?
-                WHERE id = ?
-            """
-            cursor.execute(sql, (video.titulo, video.canal_autor, video.miniatura_url, id_db))
-            conn.commit()
+            cursor = conn.execute(
+                "UPDATE videos SET titulo = ?, canal_autor = ?, miniatura_url = ? WHERE id = ?",
+                [video.titulo, video.canal_autor, video.miniatura_url, id_db]
+            )
             return cursor.rowcount > 0
+        

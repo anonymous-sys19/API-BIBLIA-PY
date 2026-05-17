@@ -1,0 +1,105 @@
+{% extends "admin/base.html" %}
+{% block title %}Videos{% endblock %}
+
+{% block content %}
+<!-- ── Page header ──────────────────────────────────────── -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Videos</h1>
+        <p>{{ videos|length if videos else 0 }} video{{ 's' if videos|length != 1 else '' }} registrado{{ 's' if videos|length != 1 else '' }}</p>
+    </div>
+    <a href="/admin/videos/new" class="btn btn-primary">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+        </svg>
+        Nuevo Video
+    </a>
+</div>
+
+<!-- ── Tabla ─────────────────────────────────────────────── -->
+<div class="card">
+    {% if videos %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Miniatura</th>
+                    <th>Título</th>
+                    <th>Canal / Autor</th>
+                    <th>Video ID</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for video in videos %}
+                <tr>
+                    <td style="color: var(--text-3); font-size: 0.78rem;">{{ video.id }}</td>
+
+                    <td>
+                        {% if video.miniatura_url %}
+                            <a href="https://youtu.be/{{ video.video_id }}" target="_blank" rel="noopener">
+                                <img src="{{ video.miniatura_url }}" class="video-thumb" alt="{{ video.titulo }}" loading="lazy">
+                            </a>
+                        {% else %}
+                            <div class="video-thumb" style="background: var(--bg-card-hov); display:flex; align-items:center; justify-content:center; color: var(--text-3); font-size: 1.4rem; border-radius: 6px;">▶</div>
+                        {% endif %}
+                    </td>
+
+                    <td style="font-weight: 600; color: var(--text-1); max-width: 260px;">
+                        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ video.titulo }}">
+                            {{ video.titulo }}
+                        </span>
+                    </td>
+
+                    <td style="color: var(--text-2);">{{ video.canal_autor or '—' }}</td>
+
+                    <td>
+                        <code style="font-size: 0.78rem; background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 4px; color: var(--accent-2);">
+                            {{ video.video_id }}
+                        </code>
+                    </td>
+
+                    <td style="font-size: 0.78rem; color: var(--text-3); white-space: nowrap;">
+                        {{ video.fecha_registro or '—' }}
+                    </td>
+
+                    <td>
+                        <div class="actions">
+                            <a href="/admin/videos/edit/{{ video.id }}" class="btn btn-ghost btn-sm">
+                                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6-6m-6 6H6v-3l9-9a2 2 0 012.828 0l.707.707A2 2 0 0118 7.172L9 16z"/>
+                                </svg>
+                                Editar
+                            </a>
+                            <form method="POST" action="/admin/videos/delete/{{ video.id }}" style="display:inline;" onsubmit="return confirmDelete('{{ video.titulo }}')">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                    </svg>
+                                    Eliminar
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <span class="empty-icon">🎬</span>
+        <p>No hay videos registrados aún.</p>
+        <a href="/admin/videos/new" class="btn btn-primary" style="margin-top: 1.25rem;">Agregar primer video</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function confirmDelete(titulo) {
+    return confirm(`¿Eliminar el video "${titulo}"? Esta acción no se puede deshacer.`);
+}
+</script>
+{% endblock %}

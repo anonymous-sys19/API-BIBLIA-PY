@@ -1,0 +1,104 @@
+{% extends "admin/base.html" %}
+{% block title %}Radios{% endblock %}
+
+{% block content %}
+<!-- ── Page header ──────────────────────────────────────── -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Radios Cristianas</h1>
+        <p>{{ streams|length if streams else 0 }} estación{{ 'es' if streams|length != 1 else '' }} registrada{{ 's' if streams|length != 1 else '' }}</p>
+    </div>
+    <a href="/admin/streams/new" class="btn btn-primary">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+        </svg>
+        Nueva Radio
+    </a>
+</div>
+
+<!-- ── Tabla ─────────────────────────────────────────────── -->
+<div class="card">
+    {% if streams %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Logo</th>
+                    <th>Nombre</th>
+                    <th>País</th>
+                    <th>Género</th>
+                    <th>Estado</th>
+                    <th>URL</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stream in streams %}
+                <tr>
+                    <td style="color: var(--text-3); font-size: 0.78rem;">{{ stream.id }}</td>
+
+                    <td>
+                        {% if stream.logo_url %}
+                            <img src="{{ stream.logo_url }}" class="logo-thumb" alt="{{ stream.nombre }}" loading="lazy">
+                        {% else %}
+                            <div class="logo-thumb" style="background: var(--bg-card-hov); display:flex; align-items:center; justify-content:center; color: var(--text-3); font-size: 1rem;">📻</div>
+                        {% endif %}
+                    </td>
+
+                    <td style="font-weight: 600; color: var(--text-1);">{{ stream.nombre }}</td>
+                    <td>{{ stream.pais or '—' }}</td>
+                    <td>{{ stream.genero or '—' }}</td>
+
+                    <td>
+                        {% if stream.status == 'online' %}
+                            <span class="badge badge-online">Online</span>
+                        {% else %}
+                            <span class="badge badge-offline">Offline</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <span style="display:block; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.78rem; color:var(--text-3);" title="{{ stream.url_stream }}">
+                            {{ stream.url_stream }}
+                        </span>
+                    </td>
+
+                    <td>
+                        <div class="actions">
+                            <a href="/admin/streams/edit/{{ stream.id }}" class="btn btn-ghost btn-sm">
+                                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6-6m-6 6H6v-3l9-9a2 2 0 012.828 0l.707.707A2 2 0 0118 7.172L9 16z"/>
+                                </svg>
+                                Editar
+                            </a>
+                            <form method="POST" action="/admin/streams/delete/{{ stream.id }}" style="display:inline;" onsubmit="return confirmDelete('{{ stream.nombre }}')">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                    </svg>
+                                    Eliminar
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <span class="empty-icon">📻</span>
+        <p>No hay radios registradas aún.</p>
+        <a href="/admin/streams/new" class="btn btn-primary" style="margin-top: 1.25rem;">Agregar primera radio</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function confirmDelete(nombre) {
+    return confirm(`¿Eliminar la radio "${nombre}"? Esta acción no se puede deshacer.`);
+}
+</script>
+{% endblock %}
