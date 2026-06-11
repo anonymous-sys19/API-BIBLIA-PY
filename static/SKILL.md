@@ -452,3 +452,12 @@ Access the admin UI at `/admin` for managing radios and videos without code.
 ## Documentation
 
 Full interactive documentation available at `/documentation`.
+
+## Brand Assets
+
+Official GhostRoot Bible API icons available for public use:
+
+- **SVG**: `/static/img/icon.svg` (Scalable, ideal for web and apps)
+- **JPG**: `/static/img/icon.jpg` (Universal compatibility, ideal for previews)
+
+These icons are free to use for linking to this API, in your documentation, or to represent your integration with GhostRoot Bible API.

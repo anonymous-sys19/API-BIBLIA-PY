@@ -190,3 +190,25 @@ class TestSkillDownload:
         assert "text/markdown" in response.headers["content-type"]
         assert "attachment" in response.headers["content-disposition"]
         assert "ghostroot-bible-api-skill.md" in response.headers["content-disposition"]
+
+
+class TestBrandAssets:
+    def test_icon_svg_accessible(self):
+        response = client.get("/static/img/icon.svg")
+        assert response.status_code == 200
+        assert "image/svg+xml" in response.headers["content-type"]
+
+    def test_icon_jpg_accessible(self):
+        response = client.get("/static/img/icon.jpg")
+        assert response.status_code == 200
+        assert "image/jpeg" in response.headers["content-type"]
+
+    def test_api_info_includes_brand_assets(self):
+        response = client.get("/api-info")
+        assert response.status_code == 200
+        data = response.json()
+        assert "brand_assets" in data
+        assert "icon_svg" in data["brand_assets"]
+        assert "icon_jpg" in data["brand_assets"]
+        assert data["brand_assets"]["icon_svg"] == "/static/img/icon.svg"
+        assert data["brand_assets"]["icon_jpg"] == "/static/img/icon.jpg"

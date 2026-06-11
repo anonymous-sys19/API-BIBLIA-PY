@@ -90,6 +90,13 @@ body {
     border-radius: var(--radius-sm);
 }
 
+.brand-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    object-fit: contain;
+}
+
 .brand h1 {
     font-family: var(--font-serif);
     font-size: 1.25rem;

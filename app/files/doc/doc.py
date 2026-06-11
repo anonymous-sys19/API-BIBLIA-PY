@@ -57,4 +57,28 @@ def doc_api_json(BIBLIAS: dict) -> dict:
         "health": {
             "GET /health",
         },
+        "brand_assets": {
+            "icon_svg": "/static/img/icon.svg",
+            "icon_jpg": "/static/img/icon.jpg",
+            "description": "Iconos oficiales de GhostRoot Bible API disponibles para uso público",
+            "formats": {
+                "svg": {
+                    "url": "/static/img/icon.svg",
+                    "type": "image/svg+xml",
+                    "use_case": "Escalable, ideal para web y apps"
+                },
+                "jpg": {
+                    "url": "/static/img/icon.jpg",
+                    "type": "image/jpeg",
+                    "use_case": "Compatible universal, ideal para previews y thumbnails"
+                }
+            }
+        },
+        "resources": {
+            "documentation": "/",
+            "swagger_ui": "/docs",
+            "redoc": "/redoc",
+            "admin_panel": "/admin",
+            "skill_download": "/download/skill"
+        }
     }
