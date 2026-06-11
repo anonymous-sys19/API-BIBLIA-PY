@@ -2,15 +2,31 @@
 
 Bienvenido a la documentación oficial de **GhostRoot Bible API**, una solución de alto rendimiento para la gestión, exploración y estudio de las Sagradas Escrituras y contenido multimedia cristiano.
 
+**🌐 URL de Producción:** https://api-biblia-py.onrender.com
+
 ---
 
 ## 🛠️ Arquitectura y Tecnologías
 
 - **Lenguaje**: Python 3.9+
 - **Framework**: FastAPI (Asíncrono y ultra-rápido)
-- **Base de Datos**: SQLite (múltiples archivos para diferentes versiones)
+- **Base de Datos**: SQLite (múltiples archivos para diferentes versiones) + Turso (libSQL)
 - **Multimedia**: Gestión de Radio Streaming y Videos de YouTube integrada.
 - **Limpieza de Datos**: Procesador dinámico para eliminar RTF y decodificar caracteres especiales heredados.
+
+---
+
+## 📚 Documentación y Herramientas
+
+| Recurso | URL | Descripción |
+| :--- | :--- | :--- |
+| **Documentación Formal** | `/` | Documentación completa con ejemplos en múltiples lenguajes |
+| **Swagger UI** | `/docs` | Documentación interactiva para probar endpoints |
+| **ReDoc** | `/redoc` | Documentación alternativa con diseño diferente |
+| **API Info (JSON)** | `/api-info` | Información de la API en formato JSON |
+| **Panel Admin** | `/admin` | Interfaz gráfica para administrar radios y videos |
+| **Health Check** | `/health` | Estado de salud de la API |
+| **SKILL.md** | `/download/skill` | Descargar skill para integración con IA/MCP |
 
 ---
 
@@ -19,14 +35,18 @@ Bienvenido a la documentación oficial de **GhostRoot Bible API**, una solución
 ### 📖 Biblia y Canon
 | Método | Endpoint | Descripción |
 | :--- | :--- | :--- |
-| `GET` | `/` | Lista de versiones instaladas. |
 | `GET` | `/daily` | Versículo diario aleatorio por fecha. |
+| `GET` | `/daily/{version}` | Versículo diario en versión específica. |
 | `GET` | `/list/testaments` | Lista de testamentos (Antiguo/Nuevo). |
 | `GET` | `/list/books` | Lista de libros (filtro opcional `?testament=id`). |
 | `GET` | `/list/books/antiguo` | Libros del Antiguo Testamento. |
 | `GET` | `/list/books/nuevo` | Libros del Nuevo Testamento. |
+| `GET` | `/info/chapters/{libro_id}` | Cantidad de capítulos de un libro. |
+| `GET` | `/info/verses/{libro_id}/{chapter}` | Cantidad de versículos de un capítulo. |
 | `GET` | `/bible/{id}/{ch}` | Capítulos completos por ID de libro. |
 | `GET` | `/{libro}/{ch}` | Capítulos completos por nombre. |
+| `GET` | `/{libro}/{ch}/{vers}` | Versículo específico por nombre. |
+| `GET` | `/{libro}/{ch}/{vers}/{version}` | Versículo específico con versión. |
 | `GET` | `/search/{query}` | Búsqueda global (insensible a tildes). |
 
 ### 📻 Streaming (Radio)
@@ -68,10 +88,10 @@ Para editar un video (`PUT /videos/{id}`), puedes actualizar:
 
 ## 🚀 Ejemplos de Consumo Profesional
 
-### ⚛️ React / Next.js (Admin: Agregar Radio)
+### ⚛️ React / Next.js (Agregar Radio)
 ```javascript
 const addRadio = async (radioData) => {
-  const res = await fetch("https://api.tu-dominio.com/stream/add", {
+  const res = await fetch("https://api-biblia-py.onrender.com/stream/add", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(radioData)
@@ -81,12 +101,12 @@ const addRadio = async (radioData) => {
 };
 ```
 
-### 🐍 Python (Admin: Agregar Video por URL)
+### 🐍 Python (Agregar Video por URL)
 ```python
 import requests
 
 def registrar_video_youtube(url_youtube):
-    url_api = "https://api.tu-dominio.com/videos/add"
+    url_api = "https://api-biblia-py.onrender.com/videos/add"
     # El sistema extrae automáticamente el ID, título y miniatura
     response = requests.post(url_api, params={"url": url_youtube})
     if response.status_code == 200:
@@ -94,6 +114,45 @@ def registrar_video_youtube(url_youtube):
 
 registrar_video_youtube("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
 ```
+
+### 📱 Kotlin (Obtener Versículo Diario)
+```kotlin
+suspend fun getDailyVerse(version: String = "rvr1960"): BibleVerse {
+    return client.get("https://api-biblia-py.onrender.com/daily/$version").body()
+}
+```
+
+### 🍎 Swift (Buscar en la Biblia)
+```swift
+func searchBible(query: String) async throws -> SearchResponse {
+    let url = URL(string: "https://api-biblia-py.onrender.com/search/\(query)")!
+    let (data, _) = try await URLSession.shared.data(from: url)
+    return try JSONDecoder().decode(SearchResponse.self, from: data)
+}
+```
+
+---
+
+## 🤖 Integración con IA / MCP
+
+Descarga el archivo [SKILL.md](https://api-biblia-py.onrender.com/download/skill) para integrar esta API con asistentes de IA como Claude, ChatGPT, u otros modelos compatibles con MCP.
+
+---
+
+## 📝 Versiones Bíblicas Disponibles
+
+| Código | Nombre Completo |
+| :--- | :--- |
+| `rvr1960` | Reina Valera 1960 (default) |
+| `nvi` | Nueva Versión Internacional |
+| `ntv` | Nueva Traducción Viviente |
+| `pdt` | Palabra de Dios para Todos |
+| `bad` | Biblia de las Américas |
+| `blsee` | Biblia de Lenguaje Sencillo |
+| `rvc` | Reina Valera Contemporánea |
+| `rvg` | Reina Valera Gómez 2010 |
+
+---
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/anonymous-sys19/API-BIBLIA-PY)
 ---

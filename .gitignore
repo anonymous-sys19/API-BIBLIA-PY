@@ -61,7 +61,7 @@ logs/
 # Coverage
 htmlcov/
 .coverage
-biblia.html
-url.html
-crear.html
-index.html
+/biblia.html
+/url.html
+/crear.html
+/index.html

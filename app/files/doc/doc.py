@@ -1,53 +1,60 @@
 
-def doc_api_json( BIBLIAS):
+def doc_api_json(BIBLIAS: dict) -> dict:
+    versiones = {
+        "RVR1960": "Reina Valera 1960",
+        "NVI": "Nueva Version Internacional",
+        "NTV": "Nueva Traduccion Viviente",
+        "PDT": "Palabra de Dios para Todos",
+        "BAD": "Biblia de las Americas",
+        "BLSEE": "Biblia de Lenguaje Sencillo",
+        "RVC": "Reina Valera Contemporanea",
+        "RVG": "Reina Valera Gomez 2010",
+    }
+
     return {
         "api": "GhostRoot Bible API",
         "version": "1.0.0",
         "endpoints": {
             "/daily": {
-                "GET: /daily/{version}",
-                "GET: /daily"
+                "GET /daily",
+                "GET /daily/{version}",
             },
-            "/list/books": {
-                "GET: /list/books/{version}",
-                "GET: /list/books",
+            "/list": {
+                "GET /list/testaments",
+                "GET /list/books",
+                "GET /list/books/antiguo",
+                "GET /list/books/nuevo",
+            },
+            "/info": {
+                "GET /info/chapters/{libro_id}",
+                "GET /info/verses/{libro_id}/{chapter}",
             },
             "/search": {
-                "GET: /search/{query}/{version}",
-                "GET: /search/{query}"
+                "GET /search/{query}",
             },
-            "/libro/capitulo/versiculo": {
-                "GET: /{libro}/{capitulo}/{versiculo}/{version}",
-                "GET: /{libro}/{capitulo}/{versiculo}"
+            "/capitulo": {
+                "GET /{libro}/{capitulo}",
+                "GET /bible/{book_id}/{chapter}",
             },
-            
+            "/versiculo": {
+                "GET /{libro}/{capitulo}/{versiculo}",
+                "GET /{libro}/{capitulo}/{versiculo}/{version}",
+            },
         },
-        
-       
-        "versiones_disponibles":{
-            list(BIBLIAS.keys())[0].upper(): "Reina Valera 1960",
-            list(BIBLIAS.keys())[1].upper(): "Nueva Version Internacional",
-            list(BIBLIAS.keys())[2].upper(): "Nueva Traduccion Viviente",
-            list(BIBLIAS.keys())[3].upper(): "Palabra de Dios para Todos",
-            list(BIBLIAS.keys())[4].upper(): "Biblia de las Americas",
-            list(BIBLIAS.keys())[5].upper(): "Biblia de Lenguaje Sencillo",
-            list(BIBLIAS.keys())[6].upper(): "Reina Valera Contemporanea",
-            list(BIBLIAS.keys())[7].upper(): "Reina Valera Gomez 2010",
-            # "LBLA": "La Biblia de Las Americas" Proximamente
-        },
-        
+        "versiones_disponibles": versiones,
         "stream_endpoints": {
-            "GET: /stream",
-            "POST: /stream/add",
-            "GET: /stream/{radio_id}",
-            "PUT: /stream/{radio_id}/edit",
-            "DELETE: /stream/{radio_id}/delete",
+            "GET /stream",
+            "POST /stream/add",
+            "PUT /stream/{radio_id}",
+            "DELETE /stream/{radio_id}",
         },
         "video_endpoints": {
-            "GET: /videos",
-            "POST: /videos/add",
-            "PUT: /videos/{video_id}",
-            "DELETE: /videos/{video_id}/delete"
-        }
-
-    } 
+            "GET /videos",
+            "POST /videos/add?url={url}",
+            "PUT /videos/{id}",
+            "DELETE /videos/{id}",
+        },
+        "health": {
+            "GET /health",
+        },
+    }

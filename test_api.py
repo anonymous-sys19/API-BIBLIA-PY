@@ -1,139 +1,192 @@
 #!/usr/bin/env python3
-"""
-Script de prueba rápida de la API Bíblica
-Verifica conectividad a BD y endpoints básicos
-"""
-
-import sqlite3
 import sys
 from pathlib import Path
 
-# Agregar el proyecto al path
+import pytest
+from fastapi.testclient import TestClient
+
 PROJECT_ROOT = Path(__file__).parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from app.db.database import Biblia
+from app.main import app
+
+client = TestClient(app)
 
 
-def test_database_connection():
-    """Prueba conexión a la base de datos"""
-    print("🔍 Probando conexión a base de datos...")
-    try:
-        biblia = Biblia("rvr1960.sqlite")
-        stats = biblia.obtener_estadisticas()
-        print(f"   ✅ BD conectada")
-        print(f"   📊 Estadísticas: {stats}")
-        return True
-    except Exception as e:
-        print(f"   ❌ Error: {e}")
-        return False
+class TestHealth:
+    def test_health_check(self):
+        response = client.get("/health")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "healthy"
+        assert "version" in data
 
 
-def test_obtener_libros():
-    """Prueba obtener libros"""
-    print("\n📚 Probando obtener_libros()...")
-    try:
-        biblia = Biblia("rvr1960.sqlite")
-        libros = biblia.obtener_libros()
-        print(f"   ✅ Obtenidos {len(libros)} libros")
-        if libros:
-            print(f"   Primer libro: {libros[0].name} ({libros[0].abbreviation})")
-        return True
-    except Exception as e:
-        print(f"   ❌ Error: {e}")
-        return False
+class TestDocs:
+    def test_home_returns_documentation_html(self):
+        response = client.get("/")
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+        assert "GhostRoot Bible API" in response.text
+        assert "Introducción" in response.text
+
+    def test_api_info_returns_json(self):
+        response = client.get("/api-info")
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "application/json"
+        data = response.json()
+        assert data["api"] == "GhostRoot Bible API"
+        assert "endpoints" in data
+        assert "versiones_disponibles" in data
 
 
-def test_obtener_libro_por_abreviacion():
-    """Prueba buscar libro por abreviación"""
-    print("\n📖 Probando obtener_libro_por_abreviacion()...")
-    try:
-        biblia = Biblia("rvr1960.sqlite")
-        libro = biblia.obtener_libro_por_abreviacion("Jn")
-        if libro:
-            print(f"   ✅ Libro encontrado: {libro.name} ({libro.chapters} capítulos)")
-        else:
-            print("   ⚠️  Libro no encontrado")
-        return True
-    except Exception as e:
-        print(f"   ❌ Error: {e}")
-        return False
+class TestDaily:
+    def test_daily_default_version(self):
+        response = client.get("/daily")
+        assert response.status_code == 200
+        data = response.json()
+        assert "text" in data
+        assert "book_name" in data
+        assert "chapter" in data
+        assert "verse" in data
+
+    def test_daily_with_version(self):
+        response = client.get("/daily/rvr1960")
+        assert response.status_code == 200
+        data = response.json()
+        assert "text" in data
 
 
-def test_obtener_verso():
-    """Prueba obtener un versículo (Juan 3:16)"""
-    print("\n✝️  Probando obtener_verso()...")
-    try:
-        biblia = Biblia("rvr1960.sqlite")
-        verso = biblia.obtener_verso(book_id=43, chapter=3, verse=16)  # John 3:16
-        if verso:
-            print(f"   ✅ Versículo encontrado: {verso.book_name} {verso.chapter}:{verso.verse}")
-            print(f"   Texto: {verso.text[:80]}...")
-        else:
-            print("   ⚠️  Versículo no encontrado")
-        return True
-    except Exception as e:
-        print(f"   ❌ Error: {e}")
-        return False
+class TestList:
+    def test_list_testaments(self):
+        response = client.get("/list/testaments")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) > 0
+
+    def test_list_books(self):
+        response = client.get("/list/books")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) > 0
+
+    def test_list_books_filter_antiguo(self):
+        response = client.get("/list/books/antiguo")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        for book in data:
+            assert book["testament_id"] == 1
+
+    def test_list_books_filter_nuevo(self):
+        response = client.get("/list/books/nuevo")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        for book in data:
+            assert book["testament_id"] == 2
 
 
-def test_obtener_capitulo():
-    """Prueba obtener un capítulo"""
-    print("\n📕 Probando obtener_capitulo()...")
-    try:
-        biblia = Biblia("rvr1960.sqlite")
-        versos = biblia.obtener_capitulo(book_id=43, chapter=1)  # John 1
-        if versos:
-            print(f"   ✅ Capítulo encontrado con {len(versos)} versículos")
-        else:
-            print("   ⚠️  Capítulo no encontrado")
-        return True
-    except Exception as e:
-        print(f"   ❌ Error: {e}")
-        return False
+class TestInfo:
+    def test_chapters_count(self):
+        response = client.get("/info/chapters/1")
+        assert response.status_code == 200
+        data = response.json()
+        assert "total" in data
+        assert data["total"] > 0
+
+    def test_verses_count(self):
+        response = client.get("/info/verses/1/1")
+        assert response.status_code == 200
+        data = response.json()
+        assert "total" in data
+        assert data["total"] > 0
 
 
-def test_buscar_en_versos():
-    """Prueba búsqueda"""
-    print("\n🔎 Probando buscar_en_versos()...")
-    try:
-        biblia = Biblia("rvr1960.sqlite")
-        resultados = biblia.buscar_en_versos("amor", limit=5)
-        if resultados:
-            print(f"   ✅ Búsqueda exitosa: {len(resultados)} resultados")
-            print(f"   Primer resultado: {resultados[0].book_name} {resultados[0].chapter}:{resultados[0].verse}")
-        else:
-            print("   ⚠️  Sin resultados")
-        return True
-    except Exception as e:
-        print(f"   ❌ Error: {e}")
-        return False
+class TestChapters:
+    def test_get_chapter_by_name(self):
+        response = client.get("/genesis/1")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) > 0
+
+    def test_get_chapter_by_id(self):
+        response = client.get("/bible/1/1")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) > 0
+
+    def test_get_chapter_invalid_book(self):
+        response = client.get("/libroinexistente/1")
+        assert response.status_code == 404
 
 
-def main():
-    """Ejecuta todas las pruebas"""
-    print("=" * 60)
-    print("🧪 PRUEBAS DE API-BIBLIA-PY")
-    print("=" * 60)
-    
-    tests = [
-        test_database_connection,
-        test_obtener_libros,
-        test_obtener_libro_por_abreviacion,
-        test_obtener_verso,
-        test_obtener_capitulo,
-        test_buscar_en_versos,
-    ]
-    
-    results = [test() for test in tests]
-    
-    print("\n" + "=" * 60)
-    print(f"📊 RESUMEN: {sum(results)}/{len(results)} pruebas exitosas")
-    print("=" * 60)
-    
-    return all(results)
+class TestVerses:
+    def test_get_verse_by_name(self):
+        response = client.get("/juan/3/16")
+        assert response.status_code == 200
+        data = response.json()
+        assert "text" in data
+        assert data["chapter"] == 3
+        assert data["verse"] == 16
+
+    def test_get_verse_not_found(self):
+        response = client.get("/juan/999/999")
+        assert response.status_code == 404
 
 
-if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+class TestSearch:
+    def test_search_basic(self):
+        response = client.get("/search/amor")
+        assert response.status_code == 200
+        data = response.json()
+        assert "busqueda" in data
+        assert "cantidad" in data
+        assert "resultados" in data
+
+    def test_search_with_accents(self):
+        response = client.get("/search/amó")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["cantidad"] >= 0
+
+    def test_search_empty(self):
+        response = client.get("/search/   ")
+        assert response.status_code == 200
+        data = response.json()
+        assert data == []
+
+
+class TestStream:
+    def test_list_radios(self):
+        response = client.get("/stream")
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
+
+
+class TestVideos:
+    def test_list_videos(self):
+        response = client.get("/videos")
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
+
+
+class TestAdminUI:
+    def test_admin_ui_serves_html(self):
+        response = client.get("/admin")
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+        assert "GhostRoot Admin" in response.text
+
+
+class TestSkillDownload:
+    def test_download_skill_endpoint(self):
+        response = client.get("/download/skill")
+        assert response.status_code == 200
+        assert "text/markdown" in response.headers["content-type"]
+        assert "attachment" in response.headers["content-disposition"]
+        assert "ghostroot-bible-api-skill.md" in response.headers["content-disposition"]

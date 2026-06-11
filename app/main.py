@@ -1,20 +1,41 @@
-
-from fastapi import FastAPI, HTTPException
-from typing import Optional
-from app.db.database import BibliaEngine, StreamManager, VideoManager
-from fastapi import FastAPI, HTTPException
-from app.db.models import RadioStream, Video, normalizar, BIBLIAS_VERSIONES
+import logging
 import re
-import httpx
 import os
-from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 
-from app.files.doc.doc import doc_api_json
+import httpx
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from typing import Optional
+
+from app.db.database import BibliaEngine, StreamManager, VideoManager
+from app.db.models import RadioStream, Video, normalizar, BIBLIAS_VERSIONES
+from app.files.doc.doc import doc_api_json
 
 load_dotenv()
 
-app = FastAPI(title="API BIBLICA - GHOSTROOT DEV")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Iniciando GhostRoot Bible API")
+    yield
+    logger.info("Cerrando GhostRoot Bible API")
+
+app = FastAPI(
+    title="GhostRoot Bible API",
+    version="1.0.0",
+    description="API para gestión y exploración de las Sagradas Escrituras",
+    lifespan=lifespan
+)
+
 BIBLIAS = BIBLIAS_VERSIONES()
 engine = BibliaEngine(BIBLIAS)
 
@@ -24,19 +45,50 @@ TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN", "")
 stream_engine = StreamManager(TURSO_DB_URL, TURSO_AUTH_TOKEN)
 video_engine = VideoManager(TURSO_DB_URL, TURSO_AUTH_TOKEN)
 
-from app.admin import admin_routes
-admin_routes(app)
-
-# Configuración CORS para permitir acceso desde cualquier origen
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permite todas las URLs
-    allow_methods=["*"],  # Permite todos los métodos HTTP
-    allow_headers=["*"],  # Permite todas las cabeceras
-    allow_credentials=True
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=False
 )
 
-@app.get("/")
+ADMIN_UI_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "admin-ui")
+app.mount("/admin/static", StaticFiles(directory=ADMIN_UI_PATH), name="admin-static")
+
+DOCS_UI_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "docs-ui")
+app.mount("/docs/static", StaticFiles(directory=DOCS_UI_PATH), name="docs-static")
+
+STATIC_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
+
+@app.get("/", tags=["Documentation"])
+def docs_ui():
+    """Documentación formal de la API"""
+    return FileResponse(os.path.join(DOCS_UI_PATH, "index.html"))
+
+@app.get("/api-info", tags=["Info"])
+def api_info():
+    """Información JSON de la API"""
+    return doc_api_json(BIBLIAS)
+
+@app.get("/admin", tags=["Admin"])
+def admin_ui():
+    return FileResponse(os.path.join(ADMIN_UI_PATH, "index.html"))
+
+@app.get("/download/skill", tags=["Docs"])
+def download_skill():
+    return FileResponse(
+        os.path.join(STATIC_PATH, "SKILL.md"),
+        media_type="text/markdown",
+        headers={"Content-Disposition": "attachment; filename=ghostroot-bible-api-skill.md"}
+    )
+
+@app.get("/health", tags=["Health"])
+def health_check():
+    return {"status": "healthy", "version": "1.0.0"}
+
+@app.get("/", tags=["Docs"])
 def home():
     """Información base de la API. tipo documentación interactiva"""
     return doc_api_json(BIBLIAS)  
@@ -154,12 +206,7 @@ def editar_radio(radio_id: int, radio: RadioStream):
         return {"mensaje": "Radio actualizada"}
     raise HTTPException(status_code=404, detail="No se encontró la radio")
 
-# --- RUTAS DE VIDEO STREAMING (FUTURAS EXPANSIONES) ---
-
-
-# Inicializamos el gestor (puedes usar el mismo sqlite de radio)
-
-# --- LÓGICA DE VIDEOS ---
+# --- RUTAS DE VIDEO STREAMING ---
 
 def extraer_youtube_id(url: str) -> str:
     """Extrae el ID de 11 caracteres de una URL de YouTube."""

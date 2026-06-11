@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — GhostRoot Bible API</title>
+    <link rel="stylesheet" href="/admin/static/style.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="brand">
+                    <span class="brand-mark"></span>
+                    <h1>GhostRoot Admin</h1>
+                </div>
+                <nav class="nav-tabs">
+                    <button class="tab-btn active" data-tab="videos">
+                        <i class="ph ph-video-camera"></i>
+                        Videos
+                    </button>
+                    <button class="tab-btn" data-tab="radios">
+                        <i class="ph ph-radio"></i>
+                        Radios
+                    </button>
+                </nav>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section id="videos-section" class="section active">
+                <div class="section-header">
+                    <div class="section-title">
+                        <h2>Videos</h2>
+                        <span class="count-badge" id="videos-count">0</span>
+                    </div>
+                    <button class="btn-primary" id="add-video-btn">
+                        <i class="ph ph-plus"></i>
+                        Agregar Video
+                    </button>
+                </div>
+
+                <div class="cards-grid" id="videos-grid">
+                    <div class="loading-state">
+                        <i class="ph ph-spinner-gap spin"></i>
+                        <p>Cargando videos...</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="radios-section" class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <h2>Estaciones de Radio</h2>
+                        <span class="count-badge" id="radios-count">0</span>
+                    </div>
+                    <button class="btn-primary" id="add-radio-btn">
+                        <i class="ph ph-plus"></i>
+                        Agregar Radio
+                    </button>
+                </div>
+
+                <div class="cards-grid" id="radios-grid">
+                    <div class="loading-state">
+                        <i class="ph ph-spinner-gap spin"></i>
+                        <p>Cargando radios...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal" id="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Agregar</h3>
+                <button class="modal-close" id="modal-close">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/admin/static/app.js"></script>
+</body>
+</html>

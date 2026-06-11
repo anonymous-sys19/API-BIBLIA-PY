@@ -13,7 +13,7 @@ def corregir_formato(texto: str) -> str:
     def decode_hex(match):
         try:
             return bytes.fromhex(match.group(1)).decode('cp1252')
-        except:
+        except (ValueError, UnicodeDecodeError):
             return match.group(0)
     
     # Buscamos el patrón \' seguido de dos caracteres hexadecimales

@@ -5,3 +5,4 @@ httpx
 libsql
 jinja2
 python-multipart
+pytest

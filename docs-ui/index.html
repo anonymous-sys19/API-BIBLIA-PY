@@ -1,0 +1,2420 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostRoot Bible API — Documentación</title>
+    <link rel="stylesheet" href="/docs/static/docs.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/kotlin.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/swift.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+</head>
+<body>
+    <div class="docs-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <span class="brand-mark"></span>
+                    <div class="brand-text">
+                        <h1>GhostRoot Bible API</h1>
+                        <span class="version">v1.0.0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <h3 class="nav-title">Inicio</h3>
+                    <ul class="nav-list">
+                        <li><a href="#introduction" class="nav-link active">Introducción</a></li>
+                        <li><a href="#authentication" class="nav-link">Autenticación</a></li>
+                        <li><a href="#rate-limiting" class="nav-link">Rate Limiting</a></li>
+                        <li><a href="#errors" class="nav-link">Errores</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h3 class="nav-title">Biblia</h3>
+                    <ul class="nav-list">
+                        <li><a href="#daily-verse" class="nav-link">Versículo Diario</a></li>
+                        <li><a href="#list-testaments" class="nav-link">Lista de Testamentos</a></li>
+                        <li><a href="#list-books" class="nav-link">Lista de Libros</a></li>
+                        <li><a href="#chapter-count" class="nav-link">Cantidad de Capítulos</a></li>
+                        <li><a href="#verse-count" class="nav-link">Cantidad de Versículos</a></li>
+                        <li><a href="#get-chapter" class="nav-link">Obtener Capítulo</a></li>
+                        <li><a href="#get-verse" class="nav-link">Obtener Versículo</a></li>
+                        <li><a href="#search" class="nav-link">Buscar</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h3 class="nav-title">Streaming</h3>
+                    <ul class="nav-list">
+                        <li><a href="#list-radios" class="nav-link">Lista de Radios</a></li>
+                        <li><a href="#add-radio" class="nav-link">Agregar Radio</a></li>
+                        <li><a href="#update-radio" class="nav-link">Actualizar Radio</a></li>
+                        <li><a href="#delete-radio" class="nav-link">Eliminar Radio</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h3 class="nav-title">Videos</h3>
+                    <ul class="nav-list">
+                        <li><a href="#list-videos" class="nav-link">Lista de Videos</a></li>
+                        <li><a href="#add-video" class="nav-link">Agregar Video</a></li>
+                        <li><a href="#update-video" class="nav-link">Actualizar Video</a></li>
+                        <li><a href="#delete-video" class="nav-link">Eliminar Video</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h3 class="nav-title">Versiones</h3>
+                    <ul class="nav-list">
+                        <li><a href="#versions" class="nav-link">Versiones Disponibles</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="content-wrapper">
+                <section id="introduction" class="doc-section active">
+                    <div class="section-header">
+                        <h1>Introducción</h1>
+                        <p class="section-subtitle">API REST para gestión y exploración de las Sagradas Escrituras</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Base URL</h2>
+                        <div class="environment-indicator">
+                            <span class="env-badge" id="env-badge">Detectando...</span>
+                            <span class="env-description" id="env-description"></span>
+                        </div>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">URL</span>
+                                <button class="copy-btn" id="copy-base-url-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="base-url-display">Detectando entorno...</code></pre>
+                        </div>
+                        <p class="url-note">La URL se detecta automáticamente según tu entorno. Todos los ejemplos de código usan esta URL base.</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Descripción</h2>
+                        <p>GhostRoot Bible API es una solución de alto rendimiento para la gestión, exploración y estudio de las Sagradas Escrituras. Proporciona acceso a múltiples versiones bíblicas, búsqueda inteligente insensible a tildes, y gestión de contenido multimedia cristiano (radio streaming y videos).</p>
+                        
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <i class="ph ph-book-open-text"></i>
+                                <h3>8 Versiones Bíblicas</h3>
+                                <p>RVR1960, NVI, NTV, PDT, BAD, BLSEE, RVC, RVG</p>
+                            </div>
+                            <div class="feature-card">
+                                <i class="ph ph-magnifying-glass"></i>
+                                <h3>Búsqueda Inteligente</h3>
+                                <p>Búsqueda insensible a tildes y mayúsculas</p>
+                            </div>
+                            <div class="feature-card">
+                                <i class="ph ph-radio"></i>
+                                <h3>Radio Streaming</h3>
+                                <p>Gestión de estaciones de radio cristianas</p>
+                            </div>
+                            <div class="feature-card">
+                                <i class="ph ph-video-camera"></i>
+                                <h3>Videos YouTube</h3>
+                                <p>Registro automático desde URLs de YouTube</p>
+                            </div>
+                        </div>
+
+                        <div class="skill-download-card">
+                            <div class="skill-info">
+                                <i class="ph ph-robot"></i>
+                                <div>
+                                    <h3>Skill para IA / MCP</h3>
+                                    <p>Descarga el archivo SKILL.md para integrar esta API con asistentes de IA como Claude, ChatGPT, u otros modelos compatibles con MCP.</p>
+                                </div>
+                            </div>
+                            <button class="btn-download" id="download-skill-btn">
+                                <i class="ph ph-download-simple"></i>
+                                Descargar SKILL.md
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta Estándar</h2>
+                        <p>Todos los endpoints retornan JSON con <code>Content-Type: application/json</code>.</p>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">{
+  "status": "success",
+  "data": { ... },
+  "message": "Operación exitosa"
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="authentication" class="doc-section">
+                    <div class="section-header">
+                        <h1>Autenticación</h1>
+                        <p class="section-subtitle">La API es pública para lectura, autenticación requerida para escritura</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoints Públicos (GET)</h2>
+                        <p>Todos los endpoints <code>GET</code> son públicos y no requieren autenticación.</p>
+                        <div class="callout info">
+                            <i class="ph ph-info"></i>
+                            <div>
+                                <strong>Nota:</strong> Los endpoints de lectura están disponibles para cualquier cliente sin necesidad de API keys.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoints de Escritura (POST, PUT, DELETE)</h2>
+                        <p>Actualmente los endpoints de escritura están abiertos para desarrollo. En producción se recomienda implementar autenticación.</p>
+                        <div class="callout warning">
+                            <i class="ph ph-warning"></i>
+                            <div>
+                                <strong>Importante:</strong> Para despliegue en producción, implementa autenticación mediante API Key o JWT.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="rate-limiting" class="doc-section">
+                    <div class="section-header">
+                        <h1>Rate Limiting</h1>
+                        <p class="section-subtitle">Límites de solicitudes por cliente</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Límites Actuales</h2>
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Límite</th>
+                                    <th>Ventana</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>GET (Lectura)</td>
+                                    <td>Sin límite</td>
+                                    <td>-</td>
+                                </tr>
+                                <tr>
+                                    <td>POST/PUT/DELETE (Escritura)</td>
+                                    <td>60 solicitudes</td>
+                                    <td>1 minuto</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="errors" class="doc-section">
+                    <div class="section-header">
+                        <h1>Códigos de Error</h1>
+                        <p class="section-subtitle">Respuestas de error estandarizadas</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Códigos HTTP</h2>
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Significado</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="status-code success">200</span></td>
+                                    <td>OK</td>
+                                    <td>La solicitud se completó correctamente</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="status-code warning">400</span></td>
+                                    <td>Bad Request</td>
+                                    <td>La solicitud es inválida o falta un parámetro requerido</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="status-code error">404</span></td>
+                                    <td>Not Found</td>
+                                    <td>El recurso solicitado no existe</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="status-code error">500</span></td>
+                                    <td>Internal Error</td>
+                                    <td>Error interno del servidor</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Formato de Error</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">{
+  "detail": "Libro 'invalido' no encontrado"
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="daily-verse" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method get">GET</span>
+                            <code class="endpoint-path">/daily</code>
+                        </div>
+                        <h1>Versículo Diario</h1>
+                        <p class="section-subtitle">Retorna un versículo aleatorio que cambia cada día</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoint</h2>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/daily</code>
+                        </div>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/daily/{version}</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Parámetros</h2>
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Parámetro</th>
+                                    <th>Tipo</th>
+                                    <th>Requerido</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>version</code></td>
+                                    <td>string</td>
+                                    <td>No</td>
+                                    <td>Versión bíblica (default: rvr1960). Ver <a href="#versions">versiones disponibles</a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">{
+  "id": 27845,
+  "book_id": 44,
+  "book_name": "Hechos",
+  "chapter": 26,
+  "verse": 21,
+  "text": "Por causa de esto los judíos, prendiéndome en el templo, intentaron matarme.",
+  "version": "rvr1960"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Ejemplos de Consumo</h2>
+                        
+                        <div class="tabs">
+                            <button class="tab-btn active" data-tab="curl-daily">cURL</button>
+                            <button class="tab-btn" data-tab="js-daily">JavaScript</button>
+                            <button class="tab-btn" data-tab="react-daily">React + TS</button>
+                            <button class="tab-btn" data-tab="next-daily">Next.js + TS</button>
+                            <button class="tab-btn" data-tab="python-daily">Python</button>
+                            <button class="tab-btn" data-tab="kotlin-daily">Kotlin</button>
+                            <button class="tab-btn" data-tab="swift-daily">Swift</button>
+                        </div>
+
+                        <div class="tab-content active" id="curl-daily">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span class="code-lang">bash</span>
+                                    <button class="copy-btn">
+                                        <i class="ph ph-copy"></i>
+                                    </button>
+                                </div>
+                                <pre><code class="language-bash">curl https://api.tu-dominio.com/daily
+
+# Con versión específica
+curl https://api.tu-dominio.com/daily/nvi</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="tab-content" id="js-daily">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span class="code-lang">JavaScript (Express/Node.js)</span>
+                                    <button class="copy-btn">
+                                        <i class="ph ph-copy"></i>
+                                    </button>
+                                </div>
+                                <pre><code class="language-javascript">const getDailyVerse = async (version = 'rvr1960') => {
+  const response = await fetch(`https://api.tu-dominio.com/daily/${version}`);
+  
+  if (!response.ok) {
+    throw new Error(`Error: ${response.status}`);
+  }
+  
+  const verse = await response.json();
+  console.log(`${verse.book_name} ${verse.chapter}:${verse.verse}`);
+  console.log(verse.text);
+  
+  return verse;
+};
+
+// Uso
+getDailyVerse('nvi')
+  .then(verse => console.log(verse))
+  .catch(err => console.error(err));</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="tab-content" id="react-daily">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span class="code-lang">React + TypeScript</span>
+                                    <button class="copy-btn">
+                                        <i class="ph ph-copy"></i>
+                                    </button>
+                                </div>
+                                <pre><code class="language-typescript">import { useState, useEffect } from 'react';
+
+interface BibleVerse {
+  id: number;
+  book_id: number;
+  book_name: string;
+  chapter: number;
+  verse: number;
+  text: string;
+  version: string;
+}
+
+type BibleVersion = 'rvr1960' | 'nvi' | 'ntv' | 'pdt' | 'bad' | 'blsee' | 'rvc' | 'rvg';
+
+const useDailyVerse = (version: BibleVersion = 'rvr1960') => {
+  const [verse, setVerse] = useState<BibleVerse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchVerse = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`/daily/${version}`);
+        if (!res.ok) throw new Error('Error al cargar versículo');
+        const data: BibleVerse = await res.json();
+        setVerse(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error desconocido');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVerse();
+  }, [version]);
+
+  return { verse, loading, error };
+};
+
+// Componente
+function DailyVerse() {
+  const { verse, loading, error } = useDailyVerse('nvi');
+
+  if (loading) return <div className="loading">Cargando...</div>;
+  if (error) return <div className="error">Error: {error}</div>;
+  if (!verse) return null;
+
+  return (
+    <article className="verse-card">
+      <h3>{verse.book_name} {verse.chapter}:{verse.verse}</h3>
+      <blockquote>{verse.text}</blockquote>
+      <footer className="version-tag">{verse.version.toUpperCase()}</footer>
+    </article>
+  );
+}
+
+export default DailyVerse;</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="tab-content" id="next-daily">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span class="code-lang">Next.js + TypeScript (Server Component)</span>
+                                    <button class="copy-btn">
+                                        <i class="ph ph-copy"></i>
+                                    </button>
+                                </div>
+                                <pre><code class="language-typescript">interface BibleVerse {
+  id: number;
+  book_id: number;
+  book_name: string;
+  chapter: number;
+  verse: number;
+  text: string;
+  version: string;
+}
+
+type BibleVersion = 'rvr1960' | 'nvi' | 'ntv' | 'pdt' | 'bad' | 'blsee' | 'rvc' | 'rvg';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.tu-dominio.com';
+
+async function getDailyVerse(version: BibleVersion = 'rvr1960'): Promise<BibleVerse> {
+  const response = await fetch(`${API_BASE}/daily/${version}`, {
+    next: { revalidate: 3600 } // Cache ISR por 1 hora
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Next.js Server Component (App Router)
+export default async function DailyVersePage() {
+  const verse = await getDailyVerse('nvi');
+
+  return (
+    <main className="container">
+      <article className="verse-card">
+        <header>
+          <h1>{verse.book_name} {verse.chapter}:{verse.verse}</h1>
+          <span className="badge">{verse.version.toUpperCase()}</span>
+        </header>
+        <blockquote className="verse-text">
+          {verse.text}
+        </blockquote>
+      </article>
+    </main>
+  );
+}</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="tab-content" id="python-daily">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span class="code-lang">Python</span>
+                                    <button class="copy-btn">
+                                        <i class="ph ph-copy"></i>
+                                    </button>
+                                </div>
+                                <pre><code class="language-python">import requests
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass
+class BibleVerse:
+    id: int
+    book_id: int
+    book_name: str
+    chapter: int
+    verse: int
+    text: str
+    version: str
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'BibleVerse':
+        return cls(**data)
+
+def get_daily_verse(version: str = 'rvr1960') -> BibleVerse:
+    """Obtiene el versículo diario de la API."""
+    url = f"https://api.tu-dominio.com/daily/{version}"
+    
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+    
+    return BibleVerse.from_dict(response.json())
+
+# Uso
+if __name__ == '__main__':
+    verse = get_daily_verse('nvi')
+    print(f"{verse.book_name} {verse.chapter}:{verse.verse}")
+    print(verse.text)</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="tab-content" id="kotlin-daily">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span class="code-lang">Kotlin (Android/Spring)</span>
+                                    <button class="copy-btn">
+                                        <i class="ph ph-copy"></i>
+                                    </button>
+                                </div>
+                                <pre><code class="language-kotlin">import kotlinx.serialization.Serializable
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.client.engine.cio.CIO
+
+@Serializable
+data class BibleVerse(
+    val id: Int,
+    val book_id: Int,
+    val book_name: String,
+    val chapter: Int,
+    val verse: Int,
+    val text: String,
+    val version: String
+)
+
+class BibleApiClient {
+    private val client = HttpClient(CIO)
+    private val baseUrl = "https://api.tu-dominio.com"
+
+    suspend fun getDailyVerse(version: String = "rvr1960"): BibleVerse {
+        return client.get("$baseUrl/daily/$version").body()
+    }
+
+    fun close() {
+        client.close()
+    }
+}
+
+// Uso con Coroutines
+suspend fun main() {
+    val client = BibleApiClient()
+    try {
+        val verse = client.getDailyVerse("nvi")
+        println("${verse.book_name} ${verse.chapter}:${verse.verse}")
+        println(verse.text)
+    } finally {
+        client.close()
+    }
+}</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="tab-content" id="swift-daily">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span class="code-lang">Swift (iOS)</span>
+                                    <button class="copy-btn">
+                                        <i class="ph ph-copy"></i>
+                                    </button>
+                                </div>
+                                <pre><code class="language-swift">import Foundation
+
+struct BibleVerse: Codable, Identifiable {
+    let id: Int
+    let bookId: Int
+    let bookName: String
+    let chapter: Int
+    let verse: Int
+    let text: String
+    let version: String
+    
+    enum CodingKeys: String, CodingKey {
+        case id, book_id, book_name, chapter, verse, text, version
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        bookId = try container.decode(Int.self, forKey: .book_id)
+        bookName = try container.decode(String.self, forKey: .book_name)
+        chapter = try container.decode(Int.self, forKey: .chapter)
+        verse = try container.decode(Int.self, forKey: .verse)
+        text = try container.decode(String.self, forKey: .text)
+        version = try container.decode(String.self, forKey: .version)
+    }
+}
+
+class BibleAPIClient {
+    private let baseURL = "https://api.tu-dominio.com"
+    
+    func getDailyVerse(version: String = "rvr1960") async throws -> BibleVerse {
+        guard let url = URL(string: "\(baseURL)/daily/\(version)") else {
+            throw URLError(.badURL)
+        }
+        
+        let (data, response) = try await URLSession.shared.data(from: url)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        
+        return try JSONDecoder().decode(BibleVerse.self, from: data)
+    }
+}
+
+// Uso
+Task {
+    let client = BibleAPIClient()
+    do {
+        let verse = try await client.getDailyVerse(version: "nvi")
+        print("\(verse.bookName) \(verse.chapter):\(verse.verse)")
+        print(verse.text)
+    } catch {
+        print("Error: \(error.localizedDescription)")
+    }
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="list-testaments" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method get">GET</span>
+                            <code class="endpoint-path">/list/testaments</code>
+                        </div>
+                        <h1>Lista de Testamentos</h1>
+                        <p class="section-subtitle">Retorna todos los testamentos disponibles</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoint</h2>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/list/testaments</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">[
+  {
+    "id": 1,
+    "name": "Old Testament"
+  },
+  {
+    "id": 2,
+    "name": "New Testament"
+  },
+  {
+    "id": 3,
+    "name": "Apocrypha"
+  }
+]</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Ejemplo de Consumo</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JavaScript</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-javascript">const getTestaments = async () => {
+  const response = await fetch('https://api.tu-dominio.com/list/testaments');
+  const testaments = await response.json();
+  
+  testaments.forEach(t => {
+    console.log(`${t.id}: ${t.name}`);
+  });
+  
+  return testaments;
+};</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="list-books" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method get">GET</span>
+                            <code class="endpoint-path">/list/books</code>
+                        </div>
+                        <h1>Lista de Libros</h1>
+                        <p class="section-subtitle">Retorna todos los libros bíblicos con filtrado por testamento</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoints</h2>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/list/books</code>
+                        </div>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/list/books?testament={id}</code>
+                        </div>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/list/books/antiguo</code>
+                        </div>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/list/books/nuevo</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Parámetros</h2>
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Parámetro</th>
+                                    <th>Tipo</th>
+                                    <th>Requerido</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>version</code></td>
+                                    <td>string</td>
+                                    <td>No</td>
+                                    <td>Versión bíblica (query param)</td>
+                                </tr>
+                                <tr>
+                                    <td><code>testament</code></td>
+                                    <td>integer</td>
+                                    <td>No</td>
+                                    <td>ID del testamento: 1 (Antiguo), 2 (Nuevo), 3 (Apócrifos)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">[
+  {
+    "id": 1,
+    "name": "Génesis",
+    "abbreviation": "Gen",
+    "testament_id": 1,
+    "testament": "Old Testament"
+  },
+  {
+    "id": 2,
+    "name": "Éxodo",
+    "abbreviation": "Exo",
+    "testament_id": 1,
+    "testament": "Old Testament"
+  }
+]</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Ejemplo de Consumo</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">React</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-javascript">function BooksList() {
+  const [books, setBooks] = useState([]);
+  const [testament, setTestament] = useState(null);
+
+  useEffect(() => {
+    const url = testament 
+      ? `/list/books?testament=${testament}`
+      : '/list/books';
+    
+    fetch(url)
+      .then(res => res.json())
+      .then(data => setBooks(data));
+  }, [testament]);
+
+  return (
+    &lt;div&gt;
+      &lt;select onChange={e =&gt; setTestament(e.target.value)}&gt;
+        &lt;option value=""&gt;Todos&lt;/option&gt;
+        &lt;option value="1"&gt;Antiguo Testamento&lt;/option&gt;
+        &lt;option value="2"&gt;Nuevo Testamento&lt;/option&gt;
+      &lt;/select&gt;
+      
+      &lt;ul&gt;
+        {books.map(book =&gt; (
+          &lt;li key={book.id}&gt;
+            {book.name} ({book.abbreviation})
+          &lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="chapter-count" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method get">GET</span>
+                            <code class="endpoint-path">/info/chapters/{libro_id}</code>
+                        </div>
+                        <h1>Cantidad de Capítulos</h1>
+                        <p class="section-subtitle">Retorna el número total de capítulos de un libro</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoint</h2>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/info/chapters/{libro_id}</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Parámetros</h2>
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Parámetro</th>
+                                    <th>Tipo</th>
+                                    <th>Requerido</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>libro_id</code></td>
+                                    <td>integer</td>
+                                    <td>Sí</td>
+                                    <td>ID del libro (path param)</td>
+                                </tr>
+                                <tr>
+                                    <td><code>version</code></td>
+                                    <td>string</td>
+                                    <td>No</td>
+                                    <td>Versión bíblica (query param)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">{
+  "total": 50
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Ejemplo</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">bash</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-bash"># Génesis tiene 50 capítulos
+curl https://api.tu-dominio.com/info/chapters/1
+
+# Respuesta: {"total": 50}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="verse-count" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method get">GET</span>
+                            <code class="endpoint-path">/info/verses/{libro_id}/{chapter}</code>
+                        </div>
+                        <h1>Cantidad de Versículos</h1>
+                        <p class="section-subtitle">Retorna el número total de versículos de un capítulo</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoint</h2>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/info/verses/{libro_id}/{chapter}</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Parámetros</h2>
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Parámetro</th>
+                                    <th>Tipo</th>
+                                    <th>Requerido</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>libro_id</code></td>
+                                    <td>integer</td>
+                                    <td>Sí</td>
+                                    <td>ID del libro</td>
+                                </tr>
+                                <tr>
+                                    <td><code>chapter</code></td>
+                                    <td>integer</td>
+                                    <td>Sí</td>
+                                    <td>Número de capítulo</td>
+                                </tr>
+                                <tr>
+                                    <td><code>version</code></td>
+                                    <td>string</td>
+                                    <td>No</td>
+                                    <td>Versión bíblica (query param)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">{
+  "total": 31
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Ejemplo</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">bash</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-bash"># Génesis capítulo 1 tiene 31 versículos
+curl https://api.tu-dominio.com/info/verses/1/1
+
+# Respuesta: {"total": 31}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="get-chapter" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method get">GET</span>
+                            <code class="endpoint-path">/{libro}/{capitulo}</code>
+                        </div>
+                        <h1>Obtener Capítulo</h1>
+                        <p class="section-subtitle">Retorna todos los versículos de un capítulo</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoints</h2>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/{libro}/{capitulo}</code>
+                        </div>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/bible/{book_id}/{chapter}</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Parámetros</h2>
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Parámetro</th>
+                                    <th>Tipo</th>
+                                    <th>Requerido</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>libro</code></td>
+                                    <td>string</td>
+                                    <td>Sí</td>
+                                    <td>Nombre o abreviatura del libro (insensible a tildes/mayúsculas)</td>
+                                </tr>
+                                <tr>
+                                    <td><code>book_id</code></td>
+                                    <td>integer</td>
+                                    <td>Sí</td>
+                                    <td>ID del libro (alternativa a nombre)</td>
+                                </tr>
+                                <tr>
+                                    <td><code>capitulo</code></td>
+                                    <td>integer</td>
+                                    <td>Sí</td>
+                                    <td>Número de capítulo</td>
+                                </tr>
+                                <tr>
+                                    <td><code>version</code></td>
+                                    <td>string</td>
+                                    <td>No</td>
+                                    <td>Versión bíblica (query param)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">[
+  {
+    "id": 1,
+    "book_id": 1,
+    "book_name": "Génesis",
+    "chapter": 1,
+    "verse": 1,
+    "text": "En el principio creó Dios los cielos y la tierra.",
+    "version": "rvr1960"
+  },
+  {
+    "id": 2,
+    "book_id": 1,
+    "book_name": "Génesis",
+    "chapter": 1,
+    "verse": 2,
+    "text": "Y la tierra estaba desordenada y vacía, y las tinieblas estaban sobre la faz del abismo, y el Espíritu de Dios se movía sobre la faz de las aguas.",
+    "version": "rvr1960"
+  }
+]</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Ejemplos de Consumo</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JavaScript</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-javascript">// Por nombre
+const getChapter = async (libro, capitulo, version = 'rvr1960') => {
+  const response = await fetch(
+    `https://api.tu-dominio.com/${libro}/${capitulo}?version=${version}`
+  );
+  return await response.json();
+};
+
+// Por ID
+const getChapterById = async (bookId, chapter, version = 'rvr1960') => {
+  const response = await fetch(
+    `https://api.tu-dominio.com/bible/${bookId}/${chapter}?version=${version}`
+  );
+  return await response.json();
+};
+
+// Uso
+const genesis1 = await getChapter('genesis', 1);
+const juan3 = await getChapter('juan', 3, 'nvi');</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="get-verse" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method get">GET</span>
+                            <code class="endpoint-path">/{libro}/{capitulo}/{versiculo}</code>
+                        </div>
+                        <h1>Obtener Versículo</h1>
+                        <p class="section-subtitle">Retorna un versículo específico</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoints</h2>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/{libro}/{capitulo}/{versiculo}</code>
+                        </div>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/{libro}/{capitulo}/{versiculo}/{version}</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Parámetros</h2>
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Parámetro</th>
+                                    <th>Tipo</th>
+                                    <th>Requerido</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>libro</code></td>
+                                    <td>string</td>
+                                    <td>Sí</td>
+                                    <td>Nombre o abreviatura del libro</td>
+                                </tr>
+                                <tr>
+                                    <td><code>capitulo</code></td>
+                                    <td>integer</td>
+                                    <td>Sí</td>
+                                    <td>Número de capítulo</td>
+                                </tr>
+                                <tr>
+                                    <td><code>versiculo</code></td>
+                                    <td>integer</td>
+                                    <td>Sí</td>
+                                    <td>Número de versículo</td>
+                                </tr>
+                                <tr>
+                                    <td><code>version</code></td>
+                                    <td>string</td>
+                                    <td>No</td>
+                                    <td>Versión bíblica (path o query param)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">{
+  "id": 26137,
+  "book_id": 43,
+  "book_name": "Juan",
+  "chapter": 3,
+  "verse": 16,
+  "text": "Porque de tal manera amó Dios al mundo, que ha dado a su Hijo unigénito, para que todo aquel que en él cree, no se pierda, mas tenga vida eterna.",
+  "version": "rvr1960"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Ejemplos</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">bash</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-bash"># Juan 3:16
+curl https://api.tu-dominio.com/juan/3/16
+
+# Con versión en path
+curl https://api.tu-dominio.com/juan/3/16/nvi
+
+# Con versión en query
+curl "https://api.tu-dominio.com/juan/3/16?version=nvi"</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="search" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method get">GET</span>
+                            <code class="endpoint-path">/search/{query}</code>
+                        </div>
+                        <h1>Buscar</h1>
+                        <p class="section-subtitle">Búsqueda de texto en toda la Biblia (insensible a tildes)</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoint</h2>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/search/{query}</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Parámetros</h2>
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Parámetro</th>
+                                    <th>Tipo</th>
+                                    <th>Requerido</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>query</code></td>
+                                    <td>string</td>
+                                    <td>Sí</td>
+                                    <td>Texto a buscar (URL encoded)</td>
+                                </tr>
+                                <tr>
+                                    <td><code>version</code></td>
+                                    <td>string</td>
+                                    <td>No</td>
+                                    <td>Versión bíblica (query param)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">{
+  "busqueda": "amor",
+  "cantidad": 30,
+  "resultados": [
+    {
+      "id": 251,
+      "book_id": 1,
+      "book_name": "Génesis",
+      "chapter": 10,
+      "verse": 16,
+      "text": "al jebuseo, al amorreo, al gergeseo,",
+      "version": "rvr1960"
+    }
+  ]
+}</code></pre>
+                        </div>
+                        <div class="callout info">
+                            <i class="ph ph-info"></i>
+                            <div>
+                                <strong>Nota:</strong> La búsqueda retorna máximo 30 resultados. Es insensible a tildes, así que "amor" encuentra "amó".
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Ejemplos de Consumo</h2>
+                        
+                        <div class="tabs">
+                            <button class="tab-btn active" data-tab="curl-search">cURL</button>
+                            <button class="tab-btn" data-tab="js-search">JavaScript</button>
+                            <button class="tab-btn" data-tab="react-search">React + TS</button>
+                            <button class="tab-btn" data-tab="python-search">Python</button>
+                            <button class="tab-btn" data-tab="kotlin-search">Kotlin</button>
+                            <button class="tab-btn" data-tab="swift-search">Swift</button>
+                        </div>
+
+                        <div class="tab-content active" id="curl-search">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span class="code-lang">bash</span>
+                                    <button class="copy-btn">
+                                        <i class="ph ph-copy"></i>
+                                    </button>
+                                </div>
+                                <pre><code class="language-bash"># Búsqueda básica
+curl "https://api.tu-dominio.com/search/amor"
+
+# Con versión específica
+curl "https://api.tu-dominio.com/search/amor?version=nvi"
+
+# Búsqueda con tildes (insensible)
+curl "https://api.tu-dominio.com/search/amó"</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="tab-content" id="js-search">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span class="code-lang">JavaScript</span>
+                                    <button class="copy-btn">
+                                        <i class="ph ph-copy"></i>
+                                    </button>
+                                </div>
+                                <pre><code class="language-javascript">async function searchBible(query, version = 'rvr1960') {
+  const encodedQuery = encodeURIComponent(query);
+  const response = await fetch(
+    `https://api.tu-dominio.com/search/${encodedQuery}?version=${version}`
+  );
+  
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}`);
+  }
+  
+  const data = await response.json();
+  console.log(`Se encontraron ${data.cantidad} resultados`);
+  
+  return data;
+}
+
+// Uso
+const results = await searchBible('amor al projimo');
+results.resultados.forEach(verse => {
+  console.log(`${verse.book_name} ${verse.chapter}:${verse.verse}`);
+});</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="tab-content" id="react-search">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span class="code-lang">React + TypeScript</span>
+                                    <button class="copy-btn">
+                                        <i class="ph ph-copy"></i>
+                                    </button>
+                                </div>
+                                <pre><code class="language-typescript">import { useState, useCallback } from 'react';
+
+interface BibleVerse {
+  id: number;
+  book_id: number;
+  book_name: string;
+  chapter: number;
+  verse: number;
+  text: string;
+  version: string;
+}
+
+interface SearchResponse {
+  busqueda: string;
+  cantidad: number;
+  resultados: BibleVerse[];
+}
+
+type BibleVersion = 'rvr1960' | 'nvi' | 'ntv' | 'pdt' | 'bad' | 'blsee' | 'rvc' | 'rvg';
+
+function useBibleSearch() {
+  const [results, setResults] = useState<SearchResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const search = useCallback(async (query: string, version: BibleVersion = 'rvr1960') => {
+    if (!query.trim()) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const encodedQuery = encodeURIComponent(query);
+      const res = await fetch(`/search/${encodedQuery}?version=${version}`);
+      
+      if (!res.ok) throw new Error('Error en la búsqueda');
+      
+      const data: SearchResponse = await res.json();
+      setResults(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { results, loading, error, search };
+}
+
+// Componente de búsqueda
+function BibleSearch() {
+  const [query, setQuery] = useState('');
+  const { results, loading, error, search } = useBibleSearch();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    search(query, 'nvi');
+  };
+
+  return (
+    <div className="search-container">
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar en la Biblia..."
+        />
+        <button type="submit" disabled={loading}>
+          {loading ? 'Buscando...' : 'Buscar'}
+        </button>
+      </form>
+
+      {error && <p className="error">{error}</p>}
+      
+      {results && (
+        <div className="results">
+          <p>Se encontraron {results.cantidad} resultados</p>
+          {results.resultados.map(verse => (
+            <article key={verse.id} className="verse-result">
+              <h4>{verse.book_name} {verse.chapter}:{verse.verse}</h4>
+              <p>{verse.text}</p>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default BibleSearch;</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="tab-content" id="python-search">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span class="code-lang">Python</span>
+                                    <button class="copy-btn">
+                                        <i class="ph ph-copy"></i>
+                                    </button>
+                                </div>
+                                <pre><code class="language-python">import requests
+from urllib.parse import quote
+from dataclasses import dataclass
+from typing import List
+
+@dataclass
+class BibleVerse:
+    id: int
+    book_id: int
+    book_name: str
+    chapter: int
+    verse: int
+    text: str
+    version: str
+
+@dataclass
+class SearchResponse:
+    busqueda: str
+    cantidad: int
+    resultados: List[BibleVerse]
+
+def search_bible(query: str, version: str = 'rvr1960') -> SearchResponse:
+    """Busca texto en la Biblia. Insensible a tildes."""
+    encoded_query = quote(query)
+    url = f"https://api.tu-dominio.com/search/{encoded_query}?version={version}"
+    
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+    
+    data = response.json()
+    verses = [BibleVerse(**v) for v in data['resultados']]
+    
+    return SearchResponse(
+        busqueda=data['busqueda'],
+        cantidad=data['cantidad'],
+        resultados=verses
+    )
+
+# Uso
+if __name__ == '__main__':
+    results = search_bible('amor al projimo', 'nvi')
+    print(f"Se encontraron {results.cantidad} resultados")
+    
+    for verse in results.resultados[:5]:
+        print(f"{verse.book_name} {verse.chapter}:{verse.verse}")
+        print(f"  {verse.text[:80]}...")</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="tab-content" id="kotlin-search">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span class="code-lang">Kotlin</span>
+                                    <button class="copy-btn">
+                                        <i class="ph ph-copy"></i>
+                                    </button>
+                                </div>
+                                <pre><code class="language-kotlin">import kotlinx.serialization.Serializable
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+
+@Serializable
+data class BibleVerse(
+    val id: Int,
+    val book_id: Int,
+    val book_name: String,
+    val chapter: Int,
+    val verse: Int,
+    val text: String,
+    val version: String
+)
+
+@Serializable
+data class SearchResponse(
+    val busqueda: String,
+    val cantidad: Int,
+    val resultados: List<BibleVerse>
+)
+
+class BibleSearchClient {
+    private val client = HttpClient()
+    private val baseUrl = "https://api.tu-dominio.com"
+
+    suspend fun search(query: String, version: String = "rvr1960"): SearchResponse {
+        return client.get("$baseUrl/search/${query.encodeURLPath()}") {
+            parameter("version", version)
+        }.body()
+    }
+
+    fun close() = client.close()
+}
+
+// Uso con Coroutines
+suspend fun main() {
+    val client = BibleSearchClient()
+    try {
+        val results = client.search("amor al projimo", "nvi")
+        println("Se encontraron ${results.cantidad} resultados")
+        
+        results.resultados.take(5).forEach { verse ->
+            println("${verse.book_name} ${verse.chapter}:${verse.verse}")
+            println("  ${verse.text.take(80)}...")
+        }
+    } finally {
+        client.close()
+    }
+}</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="tab-content" id="swift-search">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span class="code-lang">Swift</span>
+                                    <button class="copy-btn">
+                                        <i class="ph ph-copy"></i>
+                                    </button>
+                                </div>
+                                <pre><code class="language-swift">import Foundation
+
+struct BibleVerse: Codable, Identifiable {
+    let id: Int
+    let bookId: Int
+    let bookName: String
+    let chapter: Int
+    let verse: Int
+    let text: String
+    let version: String
+    
+    enum CodingKeys: String, CodingKey {
+        case id, chapter, verse, text, version
+        case bookId = "book_id"
+        case bookName = "book_name"
+    }
+}
+
+struct SearchResponse: Codable {
+    let busqueda: String
+    let cantidad: Int
+    let resultados: [BibleVerse]
+}
+
+class BibleSearchClient {
+    private let baseURL = "https://api.tu-dominio.com"
+    
+    func search(query: String, version: String = "rvr1960") async throws -> SearchResponse {
+        let encodedQuery = query.addingPercentEncoding(
+            withAllowedCharacters: .urlPathAllowed
+        ) ?? query
+        
+        guard let url = URL(string: "\(baseURL)/search/\(encodedQuery)?version=\(version)") else {
+            throw URLError(.badURL)
+        }
+        
+        let (data, response) = try await URLSession.shared.data(from: url)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        
+        return try JSONDecoder().decode(SearchResponse.self, from: data)
+    }
+}
+
+// Uso
+Task {
+    let client = BibleSearchClient()
+    do {
+        let results = try await client.search(query: "amor al projimo", version: "nvi")
+        print("Se encontraron \(results.cantidad) resultados")
+        
+        for verse in results.resultados.prefix(5) {
+            print("\(verse.bookName) \(verse.chapter):\(verse.verse)")
+            print("  \(String(verse.text.prefix(80)))...")
+        }
+    } catch {
+        print("Error: \(error.localizedDescription)")
+    }
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="list-radios" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method get">GET</span>
+                            <code class="endpoint-path">/stream</code>
+                        </div>
+                        <h1>Lista de Radios</h1>
+                        <p class="section-subtitle">Retorna todas las estaciones de radio registradas</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoint</h2>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/stream</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">[
+  {
+    "id": 5,
+    "nombre": "Enlace Juvenil-CR",
+    "url_stream": "http://stream.zeno.fm/52hf40q405quv/;",
+    "pais": "Costa Rica 88.4FM",
+    "genero": "Cristiana",
+    "logo_url": "https://cdn.instant.audio/images/logos/radios-co-cr/enlace-juvenil.png",
+    "status": "online"
+  }
+]</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Campos</h2>
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Campo</th>
+                                    <th>Tipo</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>id</code></td>
+                                    <td>integer</td>
+                                    <td>ID único de la radio</td>
+                                </tr>
+                                <tr>
+                                    <td><code>nombre</code></td>
+                                    <td>string</td>
+                                    <td>Nombre de la estación</td>
+                                </tr>
+                                <tr>
+                                    <td><code>url_stream</code></td>
+                                    <td>string</td>
+                                    <td>URL del streaming de audio</td>
+                                </tr>
+                                <tr>
+                                    <td><code>pais</code></td>
+                                    <td>string</td>
+                                    <td>País de origen</td>
+                                </tr>
+                                <tr>
+                                    <td><code>genero</code></td>
+                                    <td>string</td>
+                                    <td>Género musical/temático</td>
+                                </tr>
+                                <tr>
+                                    <td><code>logo_url</code></td>
+                                    <td>string | null</td>
+                                    <td>URL del logo de la estación</td>
+                                </tr>
+                                <tr>
+                                    <td><code>status</code></td>
+                                    <td>string</td>
+                                    <td>Estado: "online" u "offline"</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="add-radio" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method post">POST</span>
+                            <code class="endpoint-path">/stream/add</code>
+                        </div>
+                        <h1>Agregar Radio</h1>
+                        <p class="section-subtitle">Registra una nueva estación de radio</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoint</h2>
+                        <div class="endpoint-box">
+                            <span class="method post">POST</span>
+                            <code>/stream/add</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Request Body</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">{
+  "nombre": "Radio Aleluya",
+  "url_stream": "http://servidor.com:8000/stream",
+  "pais": "Costa Rica",
+  "genero": "Cristiana",
+  "logo_url": "https://ejemplo.com/logo.png",
+  "status": "online"
+}</code></pre>
+                        </div>
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Campo</th>
+                                    <th>Tipo</th>
+                                    <th>Requerido</th>
+                                    <th>Default</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>nombre</code></td>
+                                    <td>string</td>
+                                    <td>Sí</td>
+                                    <td>-</td>
+                                </tr>
+                                <tr>
+                                    <td><code>url_stream</code></td>
+                                    <td>string</td>
+                                    <td>Sí</td>
+                                    <td>-</td>
+                                </tr>
+                                <tr>
+                                    <td><code>pais</code></td>
+                                    <td>string</td>
+                                    <td>No</td>
+                                    <td>"Costa Rica"</td>
+                                </tr>
+                                <tr>
+                                    <td><code>genero</code></td>
+                                    <td>string</td>
+                                    <td>No</td>
+                                    <td>"Cristiana"</td>
+                                </tr>
+                                <tr>
+                                    <td><code>logo_url</code></td>
+                                    <td>string</td>
+                                    <td>No</td>
+                                    <td>null</td>
+                                </tr>
+                                <tr>
+                                    <td><code>status</code></td>
+                                    <td>string</td>
+                                    <td>No</td>
+                                    <td>"online"</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">{
+  "status": "success",
+  "id": 6,
+  "mensaje": "Radio agregada"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Ejemplo</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JavaScript</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-javascript">const addRadio = async (radioData) => {
+  const response = await fetch('https://api.tu-dominio.com/stream/add', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(radioData)
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Error al agregar radio');
+  }
+  
+  return await response.json();
+};
+
+// Uso
+const result = await addRadio({
+  nombre: 'Radio Aleluya',
+  url_stream: 'http://servidor.com:8000/stream',
+  pais: 'Costa Rica',
+  genero: 'Cristiana'
+});
+
+console.log(`Radio agregada con ID: ${result.id}`);</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="update-radio" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method put">PUT</span>
+                            <code class="endpoint-path">/stream/{radio_id}</code>
+                        </div>
+                        <h1>Actualizar Radio</h1>
+                        <p class="section-subtitle">Actualiza los datos de una estación existente</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoint</h2>
+                        <div class="endpoint-box">
+                            <span class="method put">PUT</span>
+                            <code>/stream/{radio_id}</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Parámetros</h2>
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Parámetro</th>
+                                    <th>Tipo</th>
+                                    <th>Requerido</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>radio_id</code></td>
+                                    <td>integer</td>
+                                    <td>Sí</td>
+                                    <td>ID de la radio (path param)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Request Body</h2>
+                        <p>Mismos campos que <a href="#add-radio">Agregar Radio</a></p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">{
+  "mensaje": "Radio actualizada"
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="delete-radio" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method delete">DELETE</span>
+                            <code class="endpoint-path">/stream/{radio_id}</code>
+                        </div>
+                        <h1>Eliminar Radio</h1>
+                        <p class="section-subtitle">Elimina una estación de radio</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoint</h2>
+                        <div class="endpoint-box">
+                            <span class="method delete">DELETE</span>
+                            <code>/stream/{radio_id}</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">{
+  "mensaje": "Radio eliminada"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Ejemplo</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">bash</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-bash">curl -X DELETE https://api.tu-dominio.com/stream/5</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="list-videos" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method get">GET</span>
+                            <code class="endpoint-path">/videos</code>
+                        </div>
+                        <h1>Lista de Videos</h1>
+                        <p class="section-subtitle">Retorna todos los videos registrados</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoint</h2>
+                        <div class="endpoint-box">
+                            <span class="method get">GET</span>
+                            <code>/videos</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">[
+  {
+    "id": 37,
+    "video_id": "PjYcsu7EnJE",
+    "titulo": "Rio de Vida",
+    "canal_autor": "ELOI",
+    "tipo": "video",
+    "miniatura_url": "https://i.ytimg.com/vi/PjYcsu7EnJE/hqdefault.jpg",
+    "fecha_registro": "2026-06-07 20:22:35"
+  }
+]</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Campos</h2>
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Campo</th>
+                                    <th>Tipo</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>id</code></td>
+                                    <td>integer</td>
+                                    <td>ID único en base de datos</td>
+                                </tr>
+                                <tr>
+                                    <td><code>video_id</code></td>
+                                    <td>string</td>
+                                    <td>ID de YouTube (11 caracteres)</td>
+                                </tr>
+                                <tr>
+                                    <td><code>titulo</code></td>
+                                    <td>string</td>
+                                    <td>Título del video</td>
+                                </tr>
+                                <tr>
+                                    <td><code>canal_autor</code></td>
+                                    <td>string | null</td>
+                                    <td>Nombre del canal</td>
+                                </tr>
+                                <tr>
+                                    <td><code>tipo</code></td>
+                                    <td>string</td>
+                                    <td>Tipo de contenido (siempre "video")</td>
+                                </tr>
+                                <tr>
+                                    <td><code>miniatura_url</code></td>
+                                    <td>string | null</td>
+                                    <td>URL de la miniatura</td>
+                                </tr>
+                                <tr>
+                                    <td><code>fecha_registro</code></td>
+                                    <td>string | null</td>
+                                    <td>Fecha de registro (YYYY-MM-DD HH:MM:SS)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="add-video" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method post">POST</span>
+                            <code class="endpoint-path">/videos/add</code>
+                        </div>
+                        <h1>Agregar Video</h1>
+                        <p class="section-subtitle">Registra un video desde URL de YouTube (extrae datos automáticamente)</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoint</h2>
+                        <div class="endpoint-box">
+                            <span class="method post">POST</span>
+                            <code>/videos/add?url={youtube_url}</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Parámetros</h2>
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Parámetro</th>
+                                    <th>Tipo</th>
+                                    <th>Requerido</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>url</code></td>
+                                    <td>string</td>
+                                    <td>Sí</td>
+                                    <td>URL completa de YouTube</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">{
+  "status": "success",
+  "id": 38,
+  "video_id": "PjYcsu7EnJE"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Ejemplo</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JavaScript</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-javascript">const addYouTubeVideo = async (youtubeUrl) => {
+  const response = await fetch(
+    `https://api.tu-dominio.com/videos/add?url=${encodeURIComponent(youtubeUrl)}`,
+    { method: 'POST' }
+  );
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Error al agregar video');
+  }
+  
+  return await response.json();
+};
+
+// Uso
+const result = await addYouTubeVideo('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+console.log(`Video registrado con ID: ${result.id}`);</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="update-video" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method put">PUT</span>
+                            <code class="endpoint-path">/videos/{id}</code>
+                        </div>
+                        <h1>Actualizar Video</h1>
+                        <p class="section-subtitle">Actualiza metadatos de un video</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoint</h2>
+                        <div class="endpoint-box">
+                            <span class="method put">PUT</span>
+                            <code>/videos/{id}</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Request Body</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">{
+  "id": 37,
+  "video_id": "PjYcsu7EnJE",
+  "titulo": "Nuevo Título",
+  "canal_autor": "Nuevo Canal",
+  "tipo": "video",
+  "miniatura_url": "https://nueva-url.com/thumb.jpg"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">{
+  "mensaje": "Video actualizado"
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="delete-video" class="doc-section">
+                    <div class="section-header">
+                        <div class="endpoint-badge">
+                            <span class="method delete">DELETE</span>
+                            <code class="endpoint-path">/videos/{id}</code>
+                        </div>
+                        <h1>Eliminar Video</h1>
+                        <p class="section-subtitle">Elimina un video registrado</p>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Endpoint</h2>
+                        <div class="endpoint-box">
+                            <span class="method delete">DELETE</span>
+                            <code>/videos/{id}</code>
+                        </div>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Respuesta</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">JSON — 200 OK</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-json">{
+  "mensaje": "Video eliminado"
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="versions" class="doc-section">
+                    <div class="section-header">
+                        <h1>Versiones Bíblicas Disponibles</h1>
+                        <p class="section-subtitle">8 traducciones de las Sagradas Escrituras</p>
+                    </div>
+
+                    <div class="content-block">
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Idioma</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>rvr1960</code></td>
+                                    <td>Reina Valera 1960</td>
+                                    <td>Español</td>
+                                </tr>
+                                <tr>
+                                    <td><code>nvi</code></td>
+                                    <td>Nueva Versión Internacional</td>
+                                    <td>Español</td>
+                                </tr>
+                                <tr>
+                                    <td><code>ntv</code></td>
+                                    <td>Nueva Traducción Viviente</td>
+                                    <td>Español</td>
+                                </tr>
+                                <tr>
+                                    <td><code>pdt</code></td>
+                                    <td>Palabra de Dios para Todos</td>
+                                    <td>Español</td>
+                                </tr>
+                                <tr>
+                                    <td><code>bad</code></td>
+                                    <td>Biblia de las Américas</td>
+                                    <td>Español</td>
+                                </tr>
+                                <tr>
+                                    <td><code>blsee</code></td>
+                                    <td>Biblia de Lenguaje Sencillo</td>
+                                    <td>Español</td>
+                                </tr>
+                                <tr>
+                                    <td><code>rvc</code></td>
+                                    <td>Reina Valera Contemporánea</td>
+                                    <td>Español</td>
+                                </tr>
+                                <tr>
+                                    <td><code>rvg</code></td>
+                                    <td>Reina Valera Gómez 2010</td>
+                                    <td>Español</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="content-block">
+                        <h2>Uso</h2>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">bash</span>
+                                <button class="copy-btn">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-bash"># Usar NVI en lugar de RVR1960
+curl https://api.tu-dominio.com/daily/nvi
+curl https://api.tu-dominio.com/juan/3/16/nvi
+curl "https://api.tu-dominio.com/search/amor?version=pdt"</code></pre>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="/docs/static/docs.js"></script>
+</body>
+</html>
