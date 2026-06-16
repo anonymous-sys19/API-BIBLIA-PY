@@ -1,11 +1,12 @@
 import logging
 import re
 import os
+from datetime import datetime
 from contextlib import asynccontextmanager
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -13,6 +14,7 @@ from typing import Optional
 
 from app.db.database import BibliaEngine, StreamManager, VideoManager
 from app.db.models import RadioStream, Video, normalizar, BIBLIAS_VERSIONES
+from app.db.ws_manager import ConnectionManager
 from app.files.doc.doc import doc_api_json
 
 load_dotenv()
@@ -44,6 +46,8 @@ TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN", "")
 
 stream_engine = StreamManager(TURSO_DB_URL, TURSO_AUTH_TOKEN)
 video_engine = VideoManager(TURSO_DB_URL, TURSO_AUTH_TOKEN)
+
+ws_manager = ConnectionManager()
 
 app.add_middleware(
     CORSMiddleware,
@@ -180,6 +184,24 @@ def get_verse(libro: str, capitulo: int, versiculo: int, version: Optional[str] 
     return res
 
 
+# --- WEBSOCKETS EN TIEMPO REAL ---
+
+allowed_ws_channels = {"videos", "streams", "biblia"}
+
+@app.websocket("/ws/{channel}")
+async def ws_realtime(ws: WebSocket, channel: str):
+    if channel not in allowed_ws_channels:
+        await ws.close(code=4004, reason=f"Canal no válido: {channel}")
+        return
+    await ws_manager.connect(channel, ws)
+    try:
+        while True:
+            data = await ws.receive_text()
+            if data == "ping":
+                await ws.send_text("pong")
+    except WebSocketDisconnect:
+        ws_manager.disconnect(channel, ws)
+
 # --- RUTAS DE RADIO STREAMING ---
 
 
@@ -188,21 +210,33 @@ def listar_radios():
     return stream_engine.listar_radios()
 
 @app.post("/stream/add", tags=["Streaming"])
-def nueva_radio(radio: RadioStream):
+async def nueva_radio(radio: RadioStream):
     radio_id = stream_engine.agregar_radio(radio)
-    if radio_id:
-        return {"status": "success", "id": radio_id, "mensaje": "Radio agregada"}
-    raise HTTPException(status_code=400, detail="Error al agregar radio")
+    if not radio_id:
+        raise HTTPException(status_code=400, detail="Error al agregar radio")
+    await ws_manager.broadcast("streams", {
+        "type": "stream:created",
+        "data": {**radio.__dict__, "id": radio_id}
+    })
+    return {"status": "success", "id": radio_id, "mensaje": "Radio agregada"}
 
 @app.delete("/stream/{radio_id}", tags=["Streaming"])
-def borrar_radio(radio_id: int):
+async def borrar_radio(radio_id: int):
     if stream_engine.eliminar_radio(radio_id):
+        await ws_manager.broadcast("streams", {
+            "type": "stream:deleted",
+            "data": {"id": radio_id}
+        })
         return {"mensaje": "Radio eliminada"}
     raise HTTPException(status_code=404, detail="No se encontró la radio")
 
 @app.put("/stream/{radio_id}", tags=["Streaming"])
-def editar_radio(radio_id: int, radio: RadioStream):
+async def editar_radio(radio_id: int, radio: RadioStream):
     if stream_engine.editar_radio(radio_id, radio):
+        await ws_manager.broadcast("streams", {
+            "type": "stream:updated",
+            "data": {**radio.__dict__, "id": radio_id}
+        })
         return {"mensaje": "Radio actualizada"}
     raise HTTPException(status_code=404, detail="No se encontró la radio")
 
@@ -240,15 +274,31 @@ async def registrar_video(url: str):
         )
         
     db_id = video_engine.agregar_video(nuevo_video)
+    video_data = {**nuevo_video.__dict__, "id": db_id}
+    if not video_data.get("fecha_registro"):
+        video_data["fecha_registro"] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    await ws_manager.broadcast("videos", {
+        "type": "video:created",
+        "data": video_data
+    })
     return {"status": "success", "id": db_id, "video_id": v_id}
 
 @app.delete("/videos/{id}", tags=["Videos"])
-def borrar_video(id: int):
+async def borrar_video(id: int):
     if video_engine.eliminar_video(id):
+        await ws_manager.broadcast("videos", {
+            "type": "video:deleted",
+            "data": {"id": id}
+        })
         return {"mensaje": "Video eliminado"}
     raise HTTPException(status_code=404, detail="Video no encontrado")
+
 @app.put("/videos/{id}", tags=["Videos"])
-def editar_video(id: int, video: Video):
+async def editar_video(id: int, video: Video):
     if video_engine.editar_video(id, video):
+        await ws_manager.broadcast("videos", {
+            "type": "video:updated",
+            "data": {**video.__dict__, "id": id}
+        })
         return {"mensaje": "Video actualizado"}
     raise HTTPException(status_code=404, detail="Video no encontrado")

@@ -3,7 +3,8 @@ const API_BASE = window.location.origin;
 const state = {
     videos: [],
     radios: [],
-    currentTab: 'videos'
+    currentTab: 'videos',
+    wsConnected: { videos: false, streams: false }
 };
 
 const elements = {
@@ -23,10 +24,101 @@ const elements = {
     addRadioBtn: document.getElementById('add-radio-btn')
 };
 
+// --- CLIENTE WEBSOCKET EN TIEMPO REAL ---
+
+class RealtimeClient {
+    constructor(channel, handlers) {
+        this.channel = channel;
+        this.handlers = handlers;
+        this.ws = null;
+        this.reconnectDelay = 1000;
+        this.connect();
+    }
+
+    connect() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        this.ws = new WebSocket(`${protocol}//${window.location.host}/ws/${this.channel}`);
+
+        this.ws.onopen = () => {
+            this.reconnectDelay = 1000;
+            state.wsConnected[this.channel] = true;
+        };
+
+        this.ws.onmessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+                const handler = this.handlers[msg.type];
+                if (handler) handler(msg.data, msg);
+            } catch (e) {
+                console.warn(`WS ${this.channel}: mensaje inválido`, event.data);
+            }
+        };
+
+        this.ws.onclose = () => {
+            state.wsConnected[this.channel] = false;
+            setTimeout(() => {
+                this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000);
+                this.connect();
+            }, this.reconnectDelay);
+        };
+
+        this.ws.onerror = () => {
+            this.ws.close();
+        };
+    }
+
+    send(data) {
+        if (this.ws?.readyState === WebSocket.OPEN) {
+            this.ws.send(typeof data === 'string' ? data : JSON.stringify(data));
+        }
+    }
+}
+
+// --- MANEJADORES DE EVENTOS EN TIEMPO REAL ---
+
+function setupRealtime() {
+    new RealtimeClient('videos', {
+        'video:created': (data) => {
+            state.videos.unshift(data);
+            renderVideos();
+        },
+        'video:updated': (data) => {
+            const idx = state.videos.findIndex(v => v.id === data.id);
+            if (idx !== -1) {
+                state.videos[idx] = data;
+                renderVideos();
+            }
+        },
+        'video:deleted': (data) => {
+            state.videos = state.videos.filter(v => v.id !== data.id);
+            renderVideos();
+        }
+    });
+
+    new RealtimeClient('streams', {
+        'stream:created': (data) => {
+            state.radios.push(data);
+            renderRadios();
+        },
+        'stream:updated': (data) => {
+            const idx = state.radios.findIndex(r => r.id === data.id);
+            if (idx !== -1) {
+                state.radios[idx] = data;
+                renderRadios();
+            }
+        },
+        'stream:deleted': (data) => {
+            state.radios = state.radios.filter(r => r.id !== data.id);
+            renderRadios();
+        }
+    });
+}
+
 function init() {
     setupTabs();
     setupModal();
     setupButtons();
+    setupRealtime();
     loadVideos();
 }
 
@@ -119,6 +211,13 @@ async function loadRadios() {
             </div>
         `;
         showToast('Error al cargar radios', 'error');
+    }
+}
+
+async function refreshAfterMutate(channel) {
+    if (!state.wsConnected[channel]) {
+        if (channel === 'videos') await loadVideos();
+        else await loadRadios();
     }
 }
 
@@ -305,7 +404,7 @@ async function createVideo(formData) {
         
         closeModal();
         showToast('Video agregado exitosamente', 'success');
-        loadVideos();
+        refreshAfterMutate('videos');
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -332,7 +431,7 @@ async function updateVideo(videoId, formData) {
         
         closeModal();
         showToast('Video actualizado exitosamente', 'success');
-        loadVideos();
+        refreshAfterMutate('videos');
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -349,7 +448,7 @@ async function deleteVideo(videoId) {
         if (!response.ok) throw new Error('Error al eliminar video');
         
         showToast('Video eliminado', 'success');
-        loadVideos();
+        refreshAfterMutate('videos');
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -432,7 +531,7 @@ async function createRadio(formData) {
         
         closeModal();
         showToast('Radio agregada exitosamente', 'success');
-        loadRadios();
+        refreshAfterMutate('streams');
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -460,7 +559,7 @@ async function updateRadio(radioId, formData) {
         
         closeModal();
         showToast('Radio actualizada exitosamente', 'success');
-        loadRadios();
+        refreshAfterMutate('streams');
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -477,7 +576,7 @@ async function deleteRadio(radioId) {
         if (!response.ok) throw new Error('Error al eliminar radio');
         
         showToast('Radio eliminada', 'success');
-        loadRadios();
+        refreshAfterMutate('streams');
     } catch (error) {
         showToast(error.message, 'error');
     }
