@@ -242,37 +242,71 @@ async def editar_radio(radio_id: int, radio: RadioStream):
 
 # --- RUTAS DE VIDEO STREAMING ---
 
-def extraer_youtube_id(url: str) -> str:
-    """Extrae el ID de 11 caracteres de una URL de YouTube."""
-    regex = r"(?:v=|\/)([0-9A-Za-z_-]{11}).*"
-    match = re.search(regex, url)
-    if not match:
-        raise HTTPException(status_code=400, detail="URL de YouTube inválida")
-    return match.group(1)
+def detect_url_type(url: str) -> dict:
+    """Detecta si una URL es de YouTube o Spotify y devuelve tipo e ID."""
+    youtube_regex = r"(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([0-9A-Za-z_-]{11})"
+    match = re.search(youtube_regex, url)
+    if match:
+        return {"type": "youtube", "id": match.group(1)}
+
+    spotify_regex = r"open\.spotify\.com\/(track|album|playlist|episode)\/([a-zA-Z0-9]+)"
+    match = re.search(spotify_regex, url)
+    if match:
+        return {"type": "spotify", "resource": match.group(1), "id": match.group(2)}
+
+    raise HTTPException(status_code=400, detail="URL no válida. Solo YouTube y Spotify")
 
 @app.get("/videos", tags=["Videos"])
 def obtener_videos():
-    return video_engine.listar_videos()
+    videos = video_engine.listar_videos()
+    result = []
+    for v in videos:
+        data = dict(v.__dict__)
+        if v.tipo == "youtube":
+            data["embed_url"] = f"https://www.youtube.com/embed/{v.video_id}"
+            data["player_url"] = f"https://www.youtube.com/watch?v={v.video_id}"
+        elif v.tipo == "spotify":
+            data["embed_url"] = f"https://open.spotify.com/embed/track/{v.video_id}"
+            data["player_url"] = f"https://open.spotify.com/track/{v.video_id}"
+        else:
+            data["embed_url"] = None
+            data["player_url"] = None
+        result.append(data)
+    return result
 
 @app.post("/videos/add", tags=["Videos"])
 async def registrar_video(url: str):
-    v_id = extraer_youtube_id(url)
-    
+    url_info = detect_url_type(url)
+
     async with httpx.AsyncClient() as client:
-        res = await client.get(f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={v_id}&format=json")
-        if res.status_code != 200:
-            raise HTTPException(status_code=404, detail="No se pudo obtener info del video")
-        
-        data = res.json()
-        nuevo_video = Video(
-            id=None,
-            video_id=v_id,
-            titulo=data.get("title", "Sin título"),
-            canal_autor=data.get("author_name"),
-            tipo="video",
-            miniatura_url=f"https://i.ytimg.com/vi/{v_id}/hqdefault.jpg"
-        )
-        
+        if url_info["type"] == "youtube":
+            v_id = url_info["id"]
+            res = await client.get(f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={v_id}&format=json")
+            if res.status_code != 200:
+                raise HTTPException(status_code=404, detail="No se pudo obtener info del video")
+            data = res.json()
+            nuevo_video = Video(
+                id=None,
+                video_id=v_id,
+                titulo=data.get("title", "Sin título"),
+                canal_autor=data.get("author_name"),
+                tipo="youtube",
+                miniatura_url=f"https://i.ytimg.com/vi/{v_id}/hqdefault.jpg"
+            )
+        else:
+            res = await client.get(f"https://open.spotify.com/oembed?url={url}")
+            if res.status_code != 200:
+                raise HTTPException(status_code=404, detail="No se pudo obtener info de la canción")
+            data = res.json()
+            nuevo_video = Video(
+                id=None,
+                video_id=url_info["id"],
+                titulo=data.get("title", "Sin título"),
+                canal_autor=data.get("author_name"),
+                tipo="spotify",
+                miniatura_url=data.get("thumbnail_url")
+            )
+
     db_id = video_engine.agregar_video(nuevo_video)
     video_data = {**nuevo_video.__dict__, "id": db_id}
     if not video_data.get("fecha_registro"):
@@ -281,7 +315,7 @@ async def registrar_video(url: str):
         "type": "video:created",
         "data": video_data
     })
-    return {"status": "success", "id": db_id, "video_id": v_id}
+    return {"status": "success", "id": db_id, "video_id": url_info["id"]}
 
 @app.delete("/videos/{id}", tags=["Videos"])
 async def borrar_video(id: int):

@@ -54,6 +54,10 @@ def doc_api_json(BIBLIAS: dict) -> dict:
             "PUT /videos/{id}",
             "DELETE /videos/{id}",
         },
+        "websocket_endpoints": {
+            "WS /ws/{channel} — canales: videos, streams, biblia",
+            "Eventos en tiempo real tras mutaciones CRUD",
+        },
         "health": {
             "GET /health",
         },

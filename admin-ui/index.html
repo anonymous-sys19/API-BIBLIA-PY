@@ -91,6 +91,36 @@
 
     <div class="toast-container" id="toast-container"></div>
 
+    <!-- PLAYER MODAL -->
+    <div class="modal-overlay" id="player-overlay">
+        <div class="modal modal-player" id="player-modal">
+            <div class="modal-header">
+                <div class="player-header-info">
+                    <span class="player-badge" id="player-type-badge">YouTube</span>
+                    <h3 id="player-title">Reproduciendo</h3>
+                </div>
+                <button class="modal-close" id="player-close">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="player-wrapper" id="player-wrapper"></div>
+                <div class="player-meta" id="player-meta">
+                    <span class="player-artist" id="player-artist"></span>
+                </div>
+                <div class="embed-info">
+                    <label class="embed-label">Embed URL para desarrolladores</label>
+                    <div class="embed-url-row">
+                        <input type="text" class="embed-input" id="embed-url-input" readonly onclick="this.select()">
+                        <button class="embed-copy-btn" id="embed-copy-btn" title="Copiar URL">
+                            <i class="ph ph-copy-simple"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="/admin/static/app.js"></script>
 </body>
 </html>

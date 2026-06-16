@@ -253,10 +253,12 @@ Deletes a radio station.
 { "mensaje": "Radio eliminada" }
 ```
 
-### Video Endpoints
+### Video / Audio Endpoints
+
+Supports both **YouTube videos** and **Spotify tracks**. The API auto-detects the URL type.
 
 #### GET /videos
-Returns all registered videos.
+Returns all registered videos and audio tracks.
 
 **Response:**
 ```json
@@ -266,18 +268,36 @@ Returns all registered videos.
     "video_id": "PjYcsu7EnJE",
     "titulo": "Rio de Vida",
     "canal_autor": "ELOI",
-    "tipo": "video",
+    "tipo": "youtube",
     "miniatura_url": "https://i.ytimg.com/vi/PjYcsu7EnJE/hqdefault.jpg",
-    "fecha_registro": "2026-06-07 20:22:35"
+    "fecha_registro": "2026-06-07 20:22:35",
+    "embed_url": "https://www.youtube.com/embed/PjYcsu7EnJE",
+    "player_url": "https://www.youtube.com/watch?v=PjYcsu7EnJE"
+  },
+  {
+    "id": 42,
+    "video_id": "69hFBsRNHaKuCkraGiExgA",
+    "titulo": "Cuando Yo Te Conocí",
+    "canal_autor": "Artista",
+    "tipo": "spotify",
+    "miniatura_url": "https://i.scdn.co/image/...",
+    "fecha_registro": "2026-06-16 14:50:23",
+    "embed_url": "https://open.spotify.com/embed/track/69hFBsRNHaKuCkraGiExgA",
+    "player_url": "https://open.spotify.com/track/69hFBsRNHaKuCkraGiExgA"
   }
 ]
 ```
 
+**Fields:**
+- `tipo`: `"youtube"` | `"spotify"` — use to determine player type
+- `embed_url`: URL for iframe embedding (YouTube embed or Spotify widget)
+- `player_url`: Direct link to the content on the native platform
+
 #### POST /videos/add
-Registers a YouTube video (auto-extracts metadata).
+Registers a YouTube video or Spotify track (auto-detects URL type, extracts metadata via oembed).
 
 **Parameters:**
-- `url` (query): Full YouTube URL
+- `url` (query): YouTube URL (`youtube.com/watch?v=...`, `youtu.be/...`) **or** Spotify URL (`open.spotify.com/track/...`)
 
 **Response:**
 ```json
@@ -289,7 +309,7 @@ Registers a YouTube video (auto-extracts metadata).
 ```
 
 #### PUT /videos/{id}
-Updates video metadata.
+Updates video/audio metadata.
 
 **Request Body:**
 ```json
@@ -298,23 +318,50 @@ Updates video metadata.
   "video_id": "PjYcsu7EnJE",
   "titulo": "Nuevo Titulo",
   "canal_autor": "Nuevo Canal",
-  "tipo": "video",
+  "tipo": "youtube",
   "miniatura_url": "https://nueva-url.com/thumb.jpg"
 }
 ```
 
-**Response:**
-```json
-{ "mensaje": "Video actualizado" }
-```
-
 #### DELETE /videos/{id}
-Deletes a video.
+Deletes a video or audio track.
 
 **Response:**
 ```json
 { "mensaje": "Video eliminado" }
 ```
+
+### Real-Time via WebSocket
+
+All mutations to streams and videos are broadcast in real-time to connected clients.
+
+#### GET /ws/{channel}
+Upgrades to a WebSocket connection.
+
+**Channels:**
+- `videos` — receives `video:created`, `video:updated`, `video:deleted` events
+- `streams` — receives `stream:created`, `stream:updated`, `stream:deleted` events
+- `biblia` — reserved for future use
+
+**Event format:**
+```json
+{
+  "type": "video:created",
+  "data": { "id": 38, "titulo": "...", "tipo": "youtube", ... }
+}
+```
+
+**Client example:**
+```javascript
+const ws = new WebSocket('wss://api-biblia-py.onrender.com/ws/videos');
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  // msg.type: "video:created" | "video:updated" | "video:deleted"
+  // msg.data: the affected resource
+};
+```
+
+**Keep-alive:** Send `"ping"` — server replies `"pong"`. Auto-reconnect recommended.
 
 ## Data Models
 
@@ -355,16 +402,18 @@ interface RadioStream {
 }
 ```
 
-### Video
+### Video / Audio
 ```typescript
 interface Video {
   id: number;
   video_id: string;
   titulo: string;
   canal_autor: string | null;
-  tipo: string;
+  tipo: "youtube" | "spotify";
   miniatura_url: string | null;
   fecha_registro: string | null;
+  embed_url: string;   // URL for iframe embedding
+  player_url: string;  // Direct link to platform
 }
 ```
 

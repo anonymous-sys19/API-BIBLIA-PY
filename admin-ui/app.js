@@ -21,7 +21,13 @@ const elements = {
     modalClose: document.getElementById('modal-close'),
     toastContainer: document.getElementById('toast-container'),
     addVideoBtn: document.getElementById('add-video-btn'),
-    addRadioBtn: document.getElementById('add-radio-btn')
+    addRadioBtn: document.getElementById('add-radio-btn'),
+    playerOverlay: document.getElementById('player-overlay'),
+    playerModal: document.getElementById('player-modal'),
+    playerTitle: document.getElementById('player-title'),
+    playerBody: document.getElementById('player-body'),
+    playerWrapper: document.getElementById('player-wrapper'),
+    playerClose: document.getElementById('player-close')
 };
 
 // --- CLIENTE WEBSOCKET EN TIEMPO REAL ---
@@ -117,6 +123,7 @@ function setupRealtime() {
 function init() {
     setupTabs();
     setupModal();
+    setupPlayer();
     setupButtons();
     setupRealtime();
     loadVideos();
@@ -156,6 +163,73 @@ function setupModal() {
     });
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeModal();
+    });
+}
+
+const playerElements = {
+    typeBadge: document.getElementById('player-type-badge'),
+    artist: document.getElementById('player-artist'),
+    embedInput: document.getElementById('embed-url-input'),
+    embedCopyBtn: document.getElementById('embed-copy-btn'),
+};
+
+function setupPlayer() {
+    elements.playerClose.addEventListener('click', closePlayer);
+    elements.playerOverlay.addEventListener('click', (e) => {
+        if (e.target === elements.playerOverlay) closePlayer();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closePlayer();
+    });
+    playerElements.embedCopyBtn.addEventListener('click', copyEmbedUrl);
+}
+
+function openPlayer(video) {
+    const isYoutube = video.tipo === 'youtube' || video.tipo === 'video';
+    const isSpotify = video.tipo === 'spotify';
+    const typeName = isSpotify ? 'Spotify' : 'YouTube';
+
+    elements.playerTitle.textContent = video.titulo;
+    playerElements.typeBadge.textContent = typeName;
+    playerElements.typeBadge.className = `player-badge ${isSpotify ? 'spotify' : 'youtube'}`;
+    playerElements.artist.textContent = video.canal_autor || '';
+
+    let embedUrl, playerUrl;
+    if (isYoutube) {
+        embedUrl = `https://www.youtube.com/embed/${video.video_id}?autoplay=1`;
+        playerUrl = `https://www.youtube.com/watch?v=${video.video_id}`;
+    } else if (isSpotify) {
+        embedUrl = `https://open.spotify.com/embed/track/${video.video_id}`;
+        playerUrl = `https://open.spotify.com/track/${video.video_id}`;
+    }
+
+    playerElements.embedInput.value = playerUrl || '';
+
+    elements.playerWrapper.className = `player-wrapper ${isYoutube ? 'youtube' : 'spotify'}`;
+    elements.playerWrapper.innerHTML = embedUrl
+        ? `<iframe src="${embedUrl}" allow="autoplay; encrypted-media" allowfullscreen loading="lazy"></iframe>`
+        : '';
+
+    elements.playerOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closePlayer() {
+    elements.playerOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+    elements.playerWrapper.innerHTML = '';
+}
+
+function copyEmbedUrl() {
+    const input = playerElements.embedInput;
+    input.select();
+    navigator.clipboard.writeText(input.value).then(() => {
+        playerElements.embedCopyBtn.classList.add('copied');
+        playerElements.embedCopyBtn.innerHTML = '<i class="ph ph-check"></i>';
+        setTimeout(() => {
+            playerElements.embedCopyBtn.classList.remove('copied');
+            playerElements.embedCopyBtn.innerHTML = '<i class="ph ph-copy-simple"></i>';
+        }, 2000);
     });
 }
 
@@ -235,12 +309,17 @@ function renderVideos() {
         return;
     }
     
-    elements.videosGrid.innerHTML = state.videos.map((video, index) => `
-        <div class="card" style="--index: ${index}">
+    elements.videosGrid.innerHTML = state.videos.map((video, index) => {
+        const isYoutube = video.tipo === 'youtube';
+        const isSpotify = video.tipo === 'spotify';
+        const typeIcon = isYoutube ? 'ph-video-camera' : 'ph-music-note';
+        const typeLabel = isYoutube ? 'YouTube' : 'Spotify';
+        return `
+        <div class="card" style="--index: ${index}" onclick="openPlayer(state.videos[${index}])">
             <div class="card-thumbnail">
                 ${video.miniatura_url 
                     ? `<img src="${video.miniatura_url}" alt="${video.titulo}" loading="lazy">`
-                    : `<div class="card-thumbnail-placeholder"><i class="ph ph-video-camera"></i></div>`
+                    : `<div class="card-thumbnail-placeholder"><i class="ph ${typeIcon}"></i></div>`
                 }
             </div>
             <div class="card-body">
@@ -250,11 +329,12 @@ function renderVideos() {
                     <span>${video.canal_autor || 'Sin canal'}</span>
                 </div>
                 <div class="card-tags">
+                    <span class="tag ${isSpotify ? 'tag-green' : 'tag-blue'}">${typeLabel}</span>
                     <span class="tag tag-blue">${video.video_id}</span>
                     ${video.fecha_registro ? `<span class="tag tag-yellow">${formatDate(video.fecha_registro)}</span>` : ''}
                 </div>
             </div>
-            <div class="card-actions">
+            <div class="card-actions" onclick="event.stopPropagation()">
                 <button class="btn-icon" onclick="openVideoForm(${video.id})" title="Editar">
                     <i class="ph ph-pencil-simple"></i>
                 </button>
@@ -263,7 +343,7 @@ function renderVideos() {
                 </button>
             </div>
         </div>
-    `).join('');
+    `}).join('');
     
     observeCards();
 }
@@ -353,8 +433,8 @@ function openVideoForm(videoId = null) {
         <form id="video-form">
             ${!isEdit ? `
                 <div class="form-group">
-                    <label class="form-label">URL de YouTube</label>
-                    <input type="url" class="form-input" name="url" placeholder="https://www.youtube.com/watch?v=..." required>
+                    <label class="form-label">URL de YouTube / Spotify</label>
+                    <input type="url" class="form-input" name="url" placeholder="https://www.youtube.com/watch?v=... o https://open.spotify.com/track/..." required>
                 </div>
             ` : `
                 <div class="form-group">
@@ -416,7 +496,7 @@ async function updateVideo(videoId, formData) {
         video_id: state.videos.find(v => v.id === videoId).video_id,
         titulo: formData.get('titulo'),
         canal_autor: formData.get('canal_autor') || null,
-        tipo: 'video',
+        tipo: state.videos.find(v => v.id === videoId).tipo,
         miniatura_url: formData.get('miniatura_url') || null
     };
     
