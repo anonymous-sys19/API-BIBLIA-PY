@@ -22,6 +22,18 @@ const elements = {
     toastContainer: document.getElementById('toast-container'),
     addVideoBtn: document.getElementById('add-video-btn'),
     addRadioBtn: document.getElementById('add-radio-btn'),
+    importBtn: document.getElementById('import-video-btn'),
+    importOverlay: document.getElementById('import-overlay'),
+    importModal: document.getElementById('import-modal'),
+    importTitle: document.getElementById('import-title'),
+    importClose: document.getElementById('import-close'),
+    importForm: document.getElementById('import-form'),
+    importSubmit: document.getElementById('import-submit-btn'),
+    importPreviewBtn: document.getElementById('import-preview-btn'),
+    importResults: document.getElementById('import-results'),
+    importSummary: document.getElementById('import-summary'),
+    importList: document.getElementById('import-list'),
+    importLoading: document.getElementById('import-loading'),
     playerOverlay: document.getElementById('player-overlay'),
     playerModal: document.getElementById('player-modal'),
     playerTitle: document.getElementById('player-title'),
@@ -233,9 +245,151 @@ function copyEmbedUrl() {
     });
 }
 
+let _importPreviewData = null;
+
 function setupButtons() {
     elements.addVideoBtn.addEventListener('click', () => openVideoForm());
     elements.addRadioBtn.addEventListener('click', () => openRadioForm());
+    elements.importBtn.addEventListener('click', () => openImport());
+    elements.importClose.addEventListener('click', closeImport);
+    elements.importOverlay.addEventListener('click', (e) => {
+        if (e.target === elements.importOverlay) closeImport();
+    });
+    elements.importPreviewBtn.addEventListener('click', () => {
+        const url = new FormData(elements.importForm).get('url');
+        if (!url) return showToast('Ingresa una URL', 'error');
+        previewImport(url);
+    });
+    elements.importForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!_importPreviewData) return;
+        confirmImport();
+    });
+}
+
+function openImport() {
+    _importPreviewData = null;
+    elements.importResults.style.display = 'none';
+    elements.importLoading.style.display = 'none';
+    elements.importSubmit.style.display = 'none';
+    elements.importPreviewBtn.style.display = '';
+    elements.importForm.reset();
+    elements.importOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeImport() {
+    _importPreviewData = null;
+    elements.importOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+    const toolbar = document.querySelector('.import-toolbar');
+    if (toolbar) toolbar.remove();
+}
+
+async function previewImport(url) {
+    elements.importLoading.style.display = 'block';
+    elements.importResults.style.display = 'none';
+    elements.importSubmit.style.display = 'none';
+    elements.importPreviewBtn.disabled = true;
+
+    try {
+        const response = await fetch(`${API_BASE}/videos/import/preview`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            const detail = err.detail;
+            const msg = Array.isArray(detail) ? detail.map(d => d.msg || d).join('; ') : (detail || 'Error al obtener vista previa');
+            throw new Error(msg);
+        }
+        const data = await response.json();
+        _importPreviewData = data;
+
+        const total = data.total || data.videos?.length || 0;
+        elements.importSummary.textContent = `${total} videos encontrados`;
+
+        elements.importList.innerHTML = (data.videos || []).map((v, i) => `
+            <label class="import-list-item">
+                <input type="checkbox" class="import-checkbox" data-idx="${i}" checked>
+                ${v.miniatura_url ? `<img src="${v.miniatura_url}" class="import-thumb" loading="lazy">` : ''}
+                <span class="import-title">${v.titulo}</span>
+            </label>
+        `).join('') || '<p style="color:var(--color-text-muted);text-align:center;padding:2rem">No se encontraron videos</p>';
+
+        const toolbar = document.createElement('div');
+        toolbar.className = 'import-toolbar';
+        toolbar.innerHTML = `
+            <span class="import-selected-count" id="import-selected-count">${total} seleccionados</span>
+            <button class="import-toggle-all" id="import-toggle-all">Deselect all</button>
+        `;
+        elements.importList.parentNode.insertBefore(toolbar, elements.importList);
+
+        document.getElementById('import-toggle-all').addEventListener('click', () => {
+            const checkboxes = elements.importList.querySelectorAll('.import-checkbox');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => cb.checked = !allChecked);
+            document.getElementById('import-toggle-all').textContent = allChecked ? 'Select all' : 'Deselect all';
+            updateImportCount();
+        });
+
+        elements.importList.addEventListener('change', updateImportCount);
+
+        elements.importResults.style.display = 'block';
+        elements.importSubmit.style.display = '';
+        updateImportCount();
+        elements.importSubmit.disabled = total === 0;
+
+        elements.importPreviewBtn.disabled = false;
+        elements.importLoading.style.display = 'none';
+    } catch (error) {
+        elements.importLoading.style.display = 'none';
+        elements.importPreviewBtn.disabled = false;
+        showToast(error.message, 'error');
+    }
+}
+
+function updateImportCount() {
+    const checked = elements.importList.querySelectorAll('.import-checkbox:checked').length;
+    const total = elements.importList.querySelectorAll('.import-checkbox').length;
+    const counter = document.getElementById('import-selected-count');
+    if (counter) counter.textContent = `${checked} de ${total} seleccionados`;
+    elements.importSubmit.innerHTML = `<i class="ph ph-download-simple"></i> Importar Seleccionados (${checked})`;
+    elements.importSubmit.disabled = checked === 0;
+}
+
+async function confirmImport() {
+    if (!_importPreviewData?.videos?.length) return;
+
+    const checkedBoxes = elements.importList.querySelectorAll('.import-checkbox:checked');
+    const selected = Array.from(checkedBoxes).map(cb => _importPreviewData.videos[parseInt(cb.dataset.idx)]);
+    if (!selected.length) return showToast('Selecciona al menos un video', 'error');
+
+    elements.importSubmit.disabled = true;
+    elements.importSubmit.innerHTML = '<i class="ph ph-spinner-gap spin"></i> Importando...';
+
+    try {
+        const response = await fetch(`${API_BASE}/videos/import/selected`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ videos: selected })
+        });
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'Error al importar');
+        }
+        const result = await response.json();
+        closeImport();
+        const msg = result.skipped > 0
+            ? `${result.imported} importados, ${result.skipped} omitidos (ya existían)`
+            : `${result.imported} videos importados`;
+        showToast(msg, 'success');
+    } catch (error) {
+        elements.importSubmit.disabled = false;
+        elements.importSubmit.innerHTML = '<i class="ph ph-download-simple"></i> Importar Seleccionados';
+        showToast(error.message, 'error');
+    }
 }
 
 async function loadVideos() {

@@ -41,10 +41,16 @@
                         <h2>Videos</h2>
                         <span class="count-badge" id="videos-count">0</span>
                     </div>
-                    <button class="btn-primary" id="add-video-btn">
-                        <i class="ph ph-plus"></i>
-                        Agregar Video
-                    </button>
+                    <div class="section-actions">
+                        <button class="btn-primary" id="import-video-btn">
+                            <i class="ph ph-download-simple"></i>
+                            Importar
+                        </button>
+                        <button class="btn-primary" id="add-video-btn">
+                            <i class="ph ph-plus"></i>
+                            Agregar
+                        </button>
+                    </div>
                 </div>
 
                 <div class="cards-grid" id="videos-grid">
@@ -86,6 +92,48 @@
                 </button>
             </div>
             <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- IMPORT MODAL -->
+    <div class="modal-overlay" id="import-overlay">
+        <div class="modal modal-import" id="import-modal">
+            <div class="modal-header">
+                <h3 id="import-title">Importar desde YouTube</h3>
+                <button class="modal-close" id="import-close">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="import-form">
+                    <div class="form-group">
+                        <label class="form-label">URL del Canal o Playlist</label>
+                        <input type="url" class="form-input" name="url" placeholder="https://youtube.com/playlist?list=... o https://youtube.com/@..." required>
+                        <p class="form-hint">Playlist, canal o perfil de YouTube</p>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="import-preview-btn">
+                            <i class="ph ph-eye"></i>
+                            Vista Previa
+                        </button>
+                        <button type="submit" class="btn-submit" id="import-submit-btn" style="display:none">
+                            <i class="ph ph-download-simple"></i>
+                            Importar Seleccionados
+                        </button>
+                    </div>
+                </form>
+                <div class="import-loading" id="import-loading" style="display:none">
+                    <div class="loading-state">
+                        <i class="ph ph-spinner-gap spin"></i>
+                        <p>Obteniendo videos...</p>
+                    </div>
+                </div>
+                <div class="import-results" id="import-results" style="display:none">
+                    <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--color-border);">
+                    <div class="import-summary" id="import-summary"></div>
+                    <div class="import-list" id="import-list" style="max-height: 360px; overflow-y: auto; margin-top: 1rem;"></div>
+                </div>
+            </div>
         </div>
     </div>
 

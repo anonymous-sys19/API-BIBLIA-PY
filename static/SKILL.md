@@ -294,17 +294,108 @@ Returns all registered videos and audio tracks.
 - `player_url`: Direct link to the content on the native platform
 
 #### POST /videos/add
-Registers a YouTube video or Spotify track (auto-detects URL type, extracts metadata via oembed).
+Registers a **single** YouTube video or Spotify track (auto-detects URL type, extracts metadata via oembed).
 
 **Parameters:**
 - `url` (query): YouTube URL (`youtube.com/watch?v=...`, `youtu.be/...`) **or** Spotify URL (`open.spotify.com/track/...`)
 
-**Response:**
+**Response (success):**
 ```json
 {
   "status": "success",
   "id": 38,
   "video_id": "PjYcsu7EnJE"
+}
+```
+
+**Response (duplicate):**
+```json
+{
+  "detail": "El video 'PjYcsu7EnJE' ya existe en la base de datos"
+}
+```
+Status code: `409 Conflict`
+
+#### POST /videos/import
+Imports **multiple** videos from a YouTube channel or playlist. Uses `yt-dlp` (no API keys needed).
+
+**Supported URLs:**
+- YouTube playlist: `youtube.com/playlist?list=...`
+- YouTube channel: `youtube.com/@handle` or `youtube.com/channel/{id}`
+- YouTube custom URL: `youtube.com/c/name` or `youtube.com/user/name`
+
+**Parameters:**
+- `url` (query): Channel/playlist URL
+
+**Response:**
+```json
+{
+  "status": "success",
+  "type": "playlist",
+  "source_id": "PLHuD7OrIIOz...",
+  "imported": 12,
+  "skipped": 3,
+  "items": [
+    { "id": 42, "video_id": "dQw4w9WgXcQ" }
+  ]
+}
+```
+
+- `imported`: videos nuevos agregados
+- `skipped`: videos que ya existían (omitidos automáticamente)
+
+**Note:** Sin configuración — funciona con `yt-dlp`. Máximo 50 videos.
+
+#### POST /videos/import/preview
+Returns a list of videos from a collection **without importing them**. Use this to let users select which videos to import.
+
+**Request Body:**
+```json
+{
+  "url": "https://youtube.com/playlist?list=PLK13vpeAIKd..."
+}
+```
+
+**Response:**
+```json
+{
+  "url": "https://youtube.com/playlist?list=PLK13vpeAIKd...",
+  "total": 15,
+  "videos": [
+    {
+      "video_id": "dQw4w9WgXcQ",
+      "titulo": "Título del video",
+      "canal_autor": "Nombre del canal",
+      "miniatura_url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg"
+    }
+  ]
+}
+```
+
+#### POST /videos/import/selected
+Importa solo los videos seleccionados después de una vista previa.
+
+**Request Body:**
+```json
+{
+  "videos": [
+    {
+      "video_id": "dQw4w9WgXcQ",
+      "titulo": "Título del video",
+      "canal_autor": "Nombre del canal",
+      "miniatura_url": "https://i.ytimg.com/vi/.../hqdefault.jpg"
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "imported": 5,
+  "skipped": 1,
+  "items": [{ "id": 42, "video_id": "dQw4w9WgXcQ" }]
 }
 ```
 
@@ -431,6 +522,8 @@ All errors return JSON with a `detail` field:
 - `200`: Success
 - `400`: Bad Request (invalid input)
 - `404`: Not Found
+- `409`: Conflict (duplicate video)
+- `422`: Validation Error (FastAPI)
 - `500`: Internal Server Error
 
 ## Usage Examples

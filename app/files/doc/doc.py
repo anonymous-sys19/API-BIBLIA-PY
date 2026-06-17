@@ -51,6 +51,9 @@ def doc_api_json(BIBLIAS: dict) -> dict:
         "video_endpoints": {
             "GET /videos",
             "POST /videos/add?url={url}",
+            "POST /videos/import?url={url} — importa canal/playlist (yt-dlp)",
+            "POST /videos/import/preview — vista previa de colección",
+            "POST /videos/import/selected — importar seleccionados",
             "PUT /videos/{id}",
             "DELETE /videos/{id}",
         },

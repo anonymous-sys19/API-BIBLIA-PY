@@ -236,12 +236,14 @@ class VideoManager:
     def _get_connection(self):
         return libsql.connect(self.db_url, auth_token=self.auth_token)
 
-    def agregar_video(self, video: Video) -> int:
+    def agregar_video(self, video: Video) -> Optional[int]:
         with self._get_connection() as conn:
             cursor = conn.execute(
                 "INSERT OR IGNORE INTO videos (video_id, titulo, canal_autor, tipo, miniatura_url) VALUES (?, ?, ?, ?, ?)",
                 [video.video_id, video.titulo, video.canal_autor, video.tipo, video.miniatura_url]
             )
+            if cursor.rowcount == 0:
+                return None
             return cursor.lastrowid
 
     def listar_videos(self) -> List[Video]:

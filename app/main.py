@@ -6,15 +6,16 @@ from contextlib import asynccontextmanager
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from typing import Optional
+from typing import Optional, List
 
 from app.db.database import BibliaEngine, StreamManager, VideoManager
 from app.db.models import RadioStream, Video, normalizar, BIBLIAS_VERSIONES
 from app.db.ws_manager import ConnectionManager
+from app.services.import_service import YouTubeImporter
 from app.files.doc.doc import doc_api_json
 
 load_dotenv()
@@ -46,6 +47,7 @@ TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN", "")
 
 stream_engine = StreamManager(TURSO_DB_URL, TURSO_AUTH_TOKEN)
 video_engine = VideoManager(TURSO_DB_URL, TURSO_AUTH_TOKEN)
+youtube_importer = YouTubeImporter()
 
 ws_manager = ConnectionManager()
 
@@ -243,16 +245,33 @@ async def editar_radio(radio_id: int, radio: RadioStream):
 # --- RUTAS DE VIDEO STREAMING ---
 
 def detect_url_type(url: str) -> dict:
-    """Detecta si una URL es de YouTube o Spotify y devuelve tipo e ID."""
-    youtube_regex = r"(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([0-9A-Za-z_-]{11})"
-    match = re.search(youtube_regex, url)
-    if match:
-        return {"type": "youtube", "id": match.group(1)}
+    """Detecta tipo de URL. Retorna tipo, id y si es colección."""
+    m = re.search(r"(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([0-9A-Za-z_-]{11})", url)
+    if m:
+        return {"type": "youtube", "id": m.group(1), "collection": False}
 
-    spotify_regex = r"open\.spotify\.com\/(track|album|playlist|episode)\/([a-zA-Z0-9]+)"
-    match = re.search(spotify_regex, url)
-    if match:
-        return {"type": "spotify", "resource": match.group(1), "id": match.group(2)}
+    m = re.search(r"youtube\.com\/playlist\?list=([0-9A-Za-z_-]+)", url)
+    if m:
+        return {"type": "youtube", "id": m.group(1), "collection": True, "resource": "playlist"}
+
+    m = re.search(r"youtube\.com\/(?:@|channel\/|c\/|user\/)([a-zA-Z0-9_-]+)", url)
+    if m:
+        cid = m.group(1)
+        if cid.startswith("UC") and len(cid) == 24:
+            return {"type": "youtube", "id": cid, "collection": True, "resource": "channel"}
+        return {"type": "youtube", "id": f"@{cid}", "collection": True, "resource": "channel"}
+
+    m = re.search(r"open\.spotify\.com\/track\/([a-zA-Z0-9]+)", url)
+    if m:
+        return {"type": "spotify", "id": m.group(1), "collection": False}
+
+    m = re.search(r"open\.spotify\.com\/artist\/([a-zA-Z0-9]+)", url)
+    if m:
+        return {"type": "spotify", "id": m.group(1), "collection": True}
+
+    m = re.search(r"open\.spotify\.com\/(album|playlist|episode)\/([a-zA-Z0-9]+)", url)
+    if m:
+        return {"type": "spotify", "resource": m.group(1), "id": m.group(2), "collection": True}
 
     raise HTTPException(status_code=400, detail="URL no válida. Solo YouTube y Spotify")
 
@@ -277,6 +296,8 @@ def obtener_videos():
 @app.post("/videos/add", tags=["Videos"])
 async def registrar_video(url: str):
     url_info = detect_url_type(url)
+    if url_info.get("collection"):
+        raise HTTPException(status_code=400, detail="Usa POST /videos/import para importar colecciones (artistas, canales, álbumes)")
 
     async with httpx.AsyncClient() as client:
         if url_info["type"] == "youtube":
@@ -308,6 +329,8 @@ async def registrar_video(url: str):
             )
 
     db_id = video_engine.agregar_video(nuevo_video)
+    if not db_id:
+        raise HTTPException(status_code=409, detail=f"El video '{url_info['id']}' ya existe en la base de datos")
     video_data = {**nuevo_video.__dict__, "id": db_id}
     if not video_data.get("fecha_registro"):
         video_data["fecha_registro"] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
@@ -316,6 +339,102 @@ async def registrar_video(url: str):
         "data": video_data
     })
     return {"status": "success", "id": db_id, "video_id": url_info["id"]}
+
+def _build_youtube_collection_url(url_info: dict) -> str:
+    """Construye la URL de YouTube para yt-dlp según el tipo de colección."""
+    resource = url_info.get("resource", "channel")
+    if resource == "playlist":
+        return f"https://www.youtube.com/playlist?list={url_info['id']}"
+    cid = url_info["id"]
+    if cid.startswith("@"):
+        return f"https://www.youtube.com/{cid}/videos"
+    return f"https://www.youtube.com/channel/{cid}/videos"
+
+async def _import_video_list(items: List[dict]) -> dict:
+    """Importa una lista de videos. Devuelve los insertados y los omitidos por duplicado."""
+    imported = []
+    skipped = 0
+    for item in items:
+        nuevo = Video(
+            id=None,
+            video_id=item["video_id"],
+            titulo=item.get("titulo", "Sin título"),
+            canal_autor=item.get("canal_autor", ""),
+            tipo="youtube",
+            miniatura_url=item.get("miniatura_url") or None
+        )
+        db_id = video_engine.agregar_video(nuevo)
+        if not db_id:
+            skipped += 1
+            continue
+        video_data = {**nuevo.__dict__, "id": db_id}
+        if not video_data.get("fecha_registro"):
+            video_data["fecha_registro"] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        await ws_manager.broadcast("videos", {"type": "video:created", "data": video_data})
+        imported.append({"id": db_id, "video_id": nuevo.video_id})
+    return {"imported": imported, "skipped": skipped}
+
+@app.post("/videos/import/preview", tags=["Videos"])
+@app.get("/videos/import/preview", tags=["Videos"])
+async def preview_import(request: Request):
+    """Obtiene la lista de videos de un canal/playlist sin importarlos."""
+    if request.method == "POST":
+        body = await request.json()
+        url = body.get("url", "")
+    else:
+        url = request.query_params.get("url", "")
+    url = url.strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="URL requerida")
+    url_info = detect_url_type(url)
+    if not url_info.get("collection"):
+        raise HTTPException(status_code=400, detail="La URL no es una colección (canal o playlist)")
+
+    if url_info["type"] != "youtube":
+        raise HTTPException(status_code=400, detail="Solo YouTube")
+
+    yt_url = _build_youtube_collection_url(url_info)
+    result = await youtube_importer.preview(yt_url)
+    return result
+
+@app.post("/videos/import/selected", tags=["Videos"])
+async def import_selected(payload: dict):
+    """Importa solo los videos seleccionados de una colección."""
+    items = payload.get("videos", [])
+    if not items:
+        raise HTTPException(status_code=400, detail="Lista de videos vacía")
+
+    result = await _import_video_list(items)
+    return {
+        "status": "success",
+        "imported": len(result["imported"]),
+        "skipped": result["skipped"],
+        "items": result["imported"]
+    }
+
+@app.post("/videos/import", tags=["Videos"])
+async def importar_coleccion(url: str):
+    """Importa todos los videos de un canal/playlist."""
+    url_info = detect_url_type(url)
+    if not url_info.get("collection"):
+        result = await registrar_video(url)
+        return {"status": "success", "type": "single", "imported": 1, "items": [result]}
+
+    if url_info["type"] != "youtube":
+        raise HTTPException(status_code=400, detail="Solo YouTube")
+
+    yt_url = _build_youtube_collection_url(url_info)
+    preview = await youtube_importer.preview(yt_url)
+    result = await _import_video_list(preview.get("videos", []))
+
+    return {
+        "status": "success",
+        "type": url_info.get("resource", "collection"),
+        "source_id": url_info["id"],
+        "imported": len(result["imported"]),
+        "skipped": result["skipped"],
+        "items": result["imported"]
+    }
 
 @app.delete("/videos/{id}", tags=["Videos"])
 async def borrar_video(id: int):
