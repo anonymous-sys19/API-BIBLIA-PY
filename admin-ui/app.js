@@ -3,9 +3,77 @@ const API_BASE = window.location.origin;
 const state = {
     videos: [],
     radios: [],
+    guias: [],
     currentTab: 'videos',
-    wsConnected: { videos: false, streams: false }
+    wsConnected: { videos: false, streams: false, biblia: false }
 };
+
+function setupGuideViewer() {
+    const overlay = document.getElementById('guia-viewer-overlay');
+    const closeBtn = document.getElementById('guia-viewer-close');
+    closeBtn.addEventListener('click', () => {
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    });
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') overlay.classList.remove('active');
+    });
+}
+
+function openGuideViewer(guideId) {
+    const overlay = document.getElementById('guia-viewer-overlay');
+    const titleEl = document.getElementById('guia-viewer-title');
+    const metaEl = document.getElementById('guia-viewer-meta');
+    const contentEl = document.getElementById('guia-viewer-content');
+    const versesListEl = document.getElementById('guia-verses-list');
+
+    fetch(`${API_BASE}/guide/${guideId}?html=true`)
+        .then(r => r.json())
+        .then(guide => {
+            titleEl.textContent = guide.title;
+            metaEl.innerHTML = `
+                <div class="guia-meta-row">
+                    <span><i class="ph ph-user"></i> ${guide.author || 'Anónimo'}</span>
+                    <span><i class="ph ph-tag"></i> ${guide.tag_list?.join(', ') || guide.tags || 'Sin tags'}</span>
+                    <span><i class="ph ph-calendar"></i> ${guide.created_at ? new Date(guide.created_at).toLocaleDateString() : ''}</span>
+                </div>
+            `;
+            contentEl.innerHTML = guide.content_html || guide.content.replace(/\n/g, '<br>');
+
+            if (guide.versiculos && guide.versiculos.length > 0) {
+                versesListEl.innerHTML = guide.versiculos.map(ref => {
+                    const bookSlug = ref.book_name
+                        ? ref.book_name.toLowerCase()
+                            .replace(/[éÉ]/g, 'e').replace(/[íÍ]/g, 'i') // ejemplo cuando: "1 Samuel" -> "1 samuel"
+                            .replace(/[óÓ]/g, 'o').replace(/[úÚ]/g, 'u') // ejemplo cuando: "1 Samuel" -> "1 samuel"
+                            .replace(/[áÁ]/g, 'a').replace(/\s+/g, ' ') // ejemplo cuando: "1 Samuel" -> "1%samuel"
+                        // cambiamos el 1-juan por 1 juan: 
+                            .replace(/-/g, ' ')
+                        : `bible/${ref.book_id}`;
+                    return `
+                    <a href="/${bookSlug}/${ref.chapter}/${ref.verse_start}" target="_blank" class="guia-verse-ref" data-book="${ref.book_id}" data-chapter="${ref.chapter}" data-verse="${ref.verse_start}">
+                        <i class="ph ph-book-open"></i>
+                        ${ref.reference}
+                    </a>`;
+                }).join('');
+                document.getElementById('guia-viewer-verses').style.display = 'block';
+            } else {
+                document.getElementById('guia-viewer-verses').style.display = 'none';
+            }
+
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        })
+        .catch(err => {
+            showToast('Error al cargar guía: ' + err.message, 'error');
+        });
+}
 
 const elements = {
     tabs: document.querySelectorAll('.tab-btn'),
@@ -22,6 +90,7 @@ const elements = {
     toastContainer: document.getElementById('toast-container'),
     addVideoBtn: document.getElementById('add-video-btn'),
     addRadioBtn: document.getElementById('add-radio-btn'),
+    addGuiaBtn: document.getElementById('add-guia-btn'),
     importBtn: document.getElementById('import-video-btn'),
     importOverlay: document.getElementById('import-overlay'),
     importModal: document.getElementById('import-modal'),
@@ -95,6 +164,24 @@ class RealtimeClient {
 // --- MANEJADORES DE EVENTOS EN TIEMPO REAL ---
 
 function setupRealtime() {
+    new RealtimeClient('biblia', {
+        'guide:created': (data) => {
+            state.guias.unshift(data);
+            renderGuias();
+        },
+        'guide:updated': (data) => {
+            const idx = state.guias.findIndex(g => g.id === data.id);
+            if (idx !== -1) {
+                state.guias[idx] = data;
+                renderGuias();
+            }
+        },
+        'guide:deleted': (data) => {
+            state.guias = state.guias.filter(g => g.id !== data.id);
+            renderGuias();
+        }
+    });
+
     new RealtimeClient('videos', {
         'video:created': (data) => {
             state.videos.unshift(data);
@@ -136,6 +223,7 @@ function init() {
     setupTabs();
     setupModal();
     setupPlayer();
+    setupGuideViewer();
     setupButtons();
     setupRealtime();
     loadVideos();
@@ -165,6 +253,8 @@ function switchTab(tabName) {
         loadVideos();
     } else if (tabName === 'radios' && state.radios.length === 0) {
         loadRadios();
+    } else if (tabName === 'guias' && state.guias.length === 0) {
+        loadGuias();
     }
 }
 
@@ -250,6 +340,7 @@ let _importPreviewData = null;
 function setupButtons() {
     elements.addVideoBtn.addEventListener('click', () => openVideoForm());
     elements.addRadioBtn.addEventListener('click', () => openRadioForm());
+    elements.addGuiaBtn.addEventListener('click', () => openGuiaForm());
     elements.importBtn.addEventListener('click', () => openImport());
     elements.importClose.addEventListener('click', closeImport);
     elements.importOverlay.addEventListener('click', (e) => {
@@ -850,6 +941,201 @@ function formatDate(dateStr) {
         month: 'short',
         year: 'numeric'
     });
+}
+
+// --- GUÍAS DE ESTUDIO ---
+
+async function loadGuias() {
+    try {
+        elements.guiasGrid = document.getElementById('guias-grid');
+        elements.guiasGrid.innerHTML = `
+            <div class="loading-state">
+                <i class="ph ph-spinner-gap spin"></i>
+                <p>Cargando guías...</p>
+            </div>
+        `;
+        const response = await fetch(`${API_BASE}/guide`);
+        if (!response.ok) throw new Error('Error al cargar guías');
+        const result = await response.json();
+        state.guias = result.data || result;
+        renderGuias();
+    } catch (error) {
+        elements.guiasGrid.innerHTML = `
+            <div class="empty-state">
+                <i class="ph ph-warning-circle"></i>
+                <p>Error al cargar guías</p>
+            </div>
+        `;
+        showToast('Error al cargar guías', 'error');
+    }
+}
+
+function renderGuias() {
+    const countEl = document.getElementById('guias-count');
+    if (countEl) countEl.textContent = state.guias.length;
+
+    if (state.guias.length === 0) {
+        elements.guiasGrid.innerHTML = `
+            <div class="empty-state">
+                <i class="ph ph-book-open-text"></i>
+                <p>No hay guías de estudio</p>
+                <p>Agrega tu primera guía con el botón de arriba</p>
+            </div>
+        `;
+        return;
+    }
+
+    elements.guiasGrid.innerHTML = state.guias.map((guia, index) => `
+        <div class="card guia-card" style="--index: ${index}" onclick="openGuideViewer(${guia.id})">
+            <div class="card-body">
+                <div class="guia-card-header">
+                    <h3 class="card-title">${guia.title}</h3>
+                    ${guia.author ? `<p class="card-subtitle"><i class="ph ph-user"></i> ${guia.author}</p>` : ''}
+                </div>
+                <div class="card-tags">
+                    ${(guia.tag_list || []).map(t => `<span class="tag tag-purple">${t}</span>`).join('')}
+                    ${!guia.tag_list?.length && guia.tags ? guia.tags.split(',').map(t => `<span class="tag tag-purple">${t.trim()}</span>`).join('') : ''}
+                    <span class="tag tag-yellow">${formatDate(guia.created_at)}</span>
+                </div>
+            </div>
+            <div class="card-actions" onclick="event.stopPropagation()">
+                <button class="btn-icon" onclick="openGuiaForm(${guia.id})" title="Editar">
+                    <i class="ph ph-pencil-simple"></i>
+                </button>
+                <button class="btn-icon danger" onclick="deleteGuia(${guia.id})" title="Eliminar">
+                    <i class="ph ph-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+
+    observeCards();
+}
+
+function openGuiaForm(guiaId = null) {
+    const guia = guiaId ? state.guias.find(g => g.id === guiaId) : null;
+    const isEdit = !!guia;
+
+    elements.modalTitle.textContent = isEdit ? 'Editar Guía' : 'Agregar Guía';
+
+    elements.modalBody.innerHTML = `
+        <form id="guia-form">
+            <div class="form-group">
+                <label class="form-label">Título</label>
+                <input type="text" class="form-input" name="title" value="${guia?.title || ''}" placeholder="Guía de Estudio Bíblico" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Autor</label>
+                <input type="text" class="form-input" name="author" value="${guia?.author || ''}" placeholder="Autor de la guía">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Contenido (Markdown)</label>
+                <textarea class="form-textarea" name="content" rows="15" placeholder="Contenido completo de la guía..." required>${guia?.content || ''}</textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tags (separados por coma)</label>
+                <input type="text" class="form-input" name="tags" value="${guia?.tags || ''}" placeholder="discipulado, oracion, fe (dejar vacío para auto-extraer)">
+                <p class="form-hint">Si se deja vacío, los tags se extraerán automáticamente del contenido</p>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Estado</label>
+                <select class="form-select" name="status">
+                    <option value="published" ${guia?.status === 'published' ? 'selected' : ''}>Publicado</option>
+                    <option value="draft" ${guia?.status === 'draft' ? 'selected' : ''}>Borrador</option>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button type="submit" class="btn-submit">${isEdit ? 'Guardar Cambios' : 'Agregar'}</button>
+            </div>
+        </form>
+    `;
+
+    document.getElementById('guia-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        if (isEdit) {
+            updateGuia(guiaId, formData);
+        } else {
+            createGuia(formData);
+        }
+    });
+
+    openModal();
+}
+
+async function createGuia(formData) {
+    const data = {
+        id: null,
+        title: formData.get('title'),
+        author: formData.get('author') || '',
+        content: formData.get('content'),
+        tags: formData.get('tags') || '',
+        status: formData.get('status') || 'published'
+    };
+
+    try {
+        const response = await fetch(`${API_BASE}/guide/add`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) throw new Error('Error al crear guía');
+
+        closeModal();
+        showToast('Guía agregada exitosamente', 'success');
+        refreshAfterMutate('biblia');
+        loadGuias();
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
+
+async function updateGuia(guiaId, formData) {
+    const data = {
+        id: guiaId,
+        title: formData.get('title'),
+        author: formData.get('author') || '',
+        content: formData.get('content'),
+        tags: formData.get('tags') || '',
+        status: formData.get('status') || 'published'
+    };
+
+    try {
+        const response = await fetch(`${API_BASE}/guide/${guiaId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) throw new Error('Error al actualizar guía');
+
+        closeModal();
+        showToast('Guía actualizada exitosamente', 'success');
+        refreshAfterMutate('biblia');
+        loadGuias();
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
+
+async function deleteGuia(guiaId) {
+    if (!confirm('¿Estás seguro de eliminar esta guía?')) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/guide/${guiaId}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) throw new Error('Error al eliminar guía');
+
+        showToast('Guía eliminada', 'success');
+        refreshAfterMutate('biblia');
+        loadGuias();
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', init);

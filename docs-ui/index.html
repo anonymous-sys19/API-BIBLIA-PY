@@ -81,6 +81,18 @@
                 </div>
 
                 <div class="nav-section">
+                    <h3 class="nav-title">Guías de Estudio</h3>
+                    <ul class="nav-list">
+                        <li><a href="#list-guias" class="nav-link">Lista de Guías</a></li>
+                        <li><a href="#get-guia" class="nav-link">Obtener Guía</a></li>
+                        <li><a href="#guia-verses" class="nav-link">Versículos de Guía</a></li>
+                        <li><a href="#add-guia" class="nav-link">Agregar Guía</a></li>
+                        <li><a href="#update-guia" class="nav-link">Actualizar Guía</a></li>
+                        <li><a href="#delete-guia" class="nav-link">Eliminar Guía</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
                     <h3 class="nav-title">Versiones</h3>
                     <ul class="nav-list">
                         <li><a href="#versions" class="nav-link">Versiones Disponibles</a></li>
@@ -2376,6 +2388,309 @@ console.log(`Video registrado con ID: ${result.id}`);</code></pre>
   "mensaje": "Video eliminado"
 }</code></pre>
                         </div>
+                    </div>
+                </section>
+
+                <section id="list-guias" class="doc-section">
+                    <div class="section-header">
+                        <h1>Lista de Guías de Estudio</h1>
+                        <p class="section-subtitle">Obtén guías de estudio bíblico paginadas con filtros opcionales</p>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpath"><span class="method get">GET</span> <span class="base-url-display">https://api.tu-dominio.com</span><span class="path">/guide</span></div>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET "https://api.tu-dominio.com/guide"</code></pre>
+                        </div>
+                    </div>
+
+                    <h3>Parámetros de Paginación</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Parámetro</th>
+                                <th>Tipo</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>page</td><td>integer</td><td>Número de página (default: 1)</td></tr>
+                            <tr><td>limit</td><td>integer</td><td>Items por página (default: 20, max: 100)</td></tr>
+                            <tr><td>tag</td><td>string</td><td>Filtrar por tag específico</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Filtrar por Tag</h3>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                        <pre><code class="language-bash">curl -X GET "https://api.tu-dominio.com/guide?tag=discipulado&page=1&limit=10"</code></pre>
+                    </div>
+
+                    <h2>Respuesta Paginada</h2>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                        <pre><code class="language-json">{
+  "data": [
+    {
+      "id": 1,
+      "title": "La Gracia Salvadora de Dios",
+      "author": "Autor",
+      "tags": "discipulado, fe, gracia",
+      "tag_list": ["discipulado", "fe", "gracia"],
+      "status": "published",
+      "created_at": "2025-01-15T10:30:00Z",
+      "updated_at": "2025-01-15T10:30:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 1,
+    "pages": 1
+  }
+}</code></pre>
+                    </div>
+
+                    <div class="info-box">
+                        <strong>Caché ETag:</strong> Las respuestas incluyen headers <code>ETag</code> y <code>Cache-Control: max-age=60</code> para optimizar peticiones repetidas.
+                    </div>
+
+                    <h3>Listar todas las etiquetas</h3>
+                    <div class="endpoint">
+                        <div class="endpath"><span class="method get">GET</span> <span class="base-url-display">https://api.tu-dominio.com</span><span class="path">/guide/tags</span></div>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET "https://api.tu-dominio.com/guide/tags"</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                        <pre><code class="language-json">["discipulado", "fe", "gracia", "oracion"]</code></pre>
+                    </div>
+                </section>
+
+                <section id="get-guia" class="doc-section">
+                    <div class="section-header">
+                        <h1>Obtener Guía de Estudio</h1>
+                        <p class="section-subtitle">Recupera una guía individual por su ID</p>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpath"><span class="method get">GET</span> <span class="base-url-display">https://api.tu-dominio.com</span><span class="path">/guide/{id}</span></div>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET "https://api.tu-dominio.com/guide/1"</code></pre>
+                        </div>
+                    </div>
+
+                    <h3>Con HTML enriquecido</h3>
+                    <p>Agrega <code>?html=true</code> para obtener el contenido con referencias bíblicas convertidas a enlaces interactivos.</p>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                        <pre><code class="language-bash">curl -X GET "https://api.tu-dominio.com/guide/1?html=true"</code></pre>
+                    </div>
+
+                    <h2>Respuesta</h2>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                        <pre><code class="language-json">{
+  "id": 1,
+  "title": "La Gracia Salvadora de Dios",
+  "author": "Autor",
+  "content": "...",
+  "content_html": "&lt;p&gt;... &lt;a href=\"/efesios/2/8\" class=\"bible-ref\"&gt;Efesios 2:8-9&lt;/a&gt; ...&lt;/p&gt;",
+  "tags": "discipulado, fe, gracia",
+  "tag_list": ["discipulado", "fe", "gracia"],
+  "status": "published",
+  "created_at": "2025-01-15T10:30:00Z",
+  "updated_at": "2025-01-15T10:30:00Z",
+  "versiculos": [
+    {
+      "book_id": 49,
+      "book_name": "Efesios",
+      "chapter": 2,
+      "verse_start": 8,
+      "verse_end": 9,
+      "reference": "Efesios 2:8-9"
+    }
+  ]
+}</code></pre>
+                    </div>
+
+                    <div class="info-box">
+                        <strong>Enlaces de versículos:</strong> Las referencias bíblicas en <code>content_html</code> apuntan directamente al versículo (ej: <code>/efesios/2/8</code>), no al capítulo completo. Los nombres de libros usan espacios (ej: <code>/2 corintios/3/18</code>).
+                    </div>
+
+                    <div class="info-box">
+                        <strong>HTML pre-computado:</strong> El <code>content_html</code> se genera y cachea en la base de datos al crear/editar la guía, no en cada request.
+                    </div>
+                </section>
+
+                <section id="add-guia" class="doc-section">
+                    <div class="section-header">
+                        <h1>Agregar Guía de Estudio</h1>
+                        <p class="section-subtitle">Crea una nueva guía de estudio bíblico</p>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpath"><span class="method post">POST</span> <span class="base-url-display">https://api.tu-dominio.com</span><span class="path">/guide/add</span></div>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST "https://api.tu-dominio.com/guide/add" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": null,
+    "title": "La Gracia Salvadora de Dios",
+    "author": "Autor",
+    "content": "Tu contenido aquí...",
+    "tags": "discipulado, fe",
+    "status": "published"
+  }'</code></pre>
+                        </div>
+                    </div>
+
+                    <h2>Parámetros</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Tipo</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>id</td><td>integer/null</td><td>Siempre null para crear nuevas guías</td></tr>
+                            <tr><td>title</td><td>string</td><td>Título de la guía</td></tr>
+                            <tr><td>author</td><td>string</td><td>Autor de la guía (opcional)</td></tr>
+                            <tr><td>content</td><td>string</td><td>Contenido completo de la guía (markdown/texto)</td></tr>
+                            <tr><td>tags</td><td>string</td><td>Tags separados por comas. Si se omite, se auto-extraen del contenido</td></tr>
+                            <tr><td>status</td><td>string</td><td>"published" o "draft" (default: "published")</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h2>Respuesta</h2>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                        <pre><code class="language-json">{
+  "status": "success",
+  "id": 1,
+  "mensaje": "Guía agregada"
+}</code></pre>
+                    </div>
+
+                    <div class="info-box">
+                        <strong>HTML pre-computado:</strong> El <code>content_html</code> se genera automáticamente al crear la guía y se cachea en la base de datos para optimizar lecturas futuras.
+                    </div>
+                </section>
+
+                <section id="update-guia" class="doc-section">
+                    <div class="section-header">
+                        <h1>Actualizar Guía de Estudio</h1>
+                        <p class="section-subtitle">Modifica una guía existente por su ID</p>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpath"><span class="method put">PUT</span> <span class="base-url-display">https://api.tu-dominio.com</span><span class="path">/guide/{id}</span></div>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                            <pre><code class="language-bash">curl -X PUT "https://api.tu-dominio.com/guide/1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": null,
+    "title": "La Gracia Salvadora de Dios (Actualizado)",
+    "author": "Autor",
+    "content": "Contenido actualizado...",
+    "tags": "discipulado, fe, gracia",
+    "status": "published"
+  }'</code></pre>
+                        </div>
+                    </div>
+
+                    <h2>Respuesta</h2>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                        <pre><code class="language-json">{
+  "mensaje": "Guía actualizada"
+}</code></pre>
+                    </div>
+
+                    <div class="info-box">
+                        <strong>Re-computa HTML:</strong> Al editar una guía, el <code>content_html</code> se re-genera y actualiza en la base de datos.
+                    </div>
+                </section>
+
+                <section id="guia-verses" class="doc-section">
+                    <div class="section-header">
+                        <h1>Obtener Versículos de una Guía</h1>
+                        <p class="section-subtitle">Textos bíblicos completos de todas las referencias en la guía (batch lookup con deduplicación)</p>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpath"><span class="method get">GET</span> <span class="base-url-display">https://api.tu-dominio.com</span><span class="path">/guide/{id}/verses</span></div>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET "https://api.tu-dominio.com/guide/1/verses"</code></pre>
+                        </div>
+                    </div>
+
+                    <h3>Con versión específica</h3>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                        <pre><code class="language-bash">curl -X GET "https://api.tu-dominio.com/guide/1/verses?version=nvi"</code></pre>
+                    </div>
+
+                    <h2>Respuesta</h2>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                        <pre><code class="language-json">[
+  {
+    "id": 26137,
+    "book_id": 43,
+    "book_name": "Juan",
+    "chapter": 3,
+    "verse": 16,
+    "text": "Porque de tal manera amó Dios al mundo...",
+    "version": "rvr1960"
+  },
+  {
+    "id": 27845,
+    "book_id": 45,
+    "book_name": "Romanos",
+    "chapter": 8,
+    "verse": 28,
+    "text": "Y sabemos que a los que aman a Dios...",
+    "version": "rvr1960"
+  }
+]</code></pre>
+                    </div>
+
+                    <div class="info-box">
+                        <strong>Batch lookup:</strong> Las referencias se deduplican automáticamente. Si la guía menciona "Juan 3:16" tres veces, solo se consulta una vez.
+                    </div>
+                </section>
+
+                <section id="delete-guia" class="doc-section">
+                    <div class="section-header">
+                        <h1>Eliminar Guía de Estudio</h1>
+                        <p class="section-subtitle">Elimina permanentemente una guía y sus etiquetas</p>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpath"><span class="method delete">DELETE</span> <span class="base-url-display">https://api.tu-dominio.com</span><span class="path">/guide/{id}</span></div>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                            <pre><code class="language-bash">curl -X DELETE "https://api.tu-dominio.com/guide/1"</code></pre>
+                        </div>
+                    </div>
+
+                    <h2>Respuesta</h2>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="ph ph-copy"></i></button>
+                        <pre><code class="language-json">{
+  "mensaje": "Guía eliminada"
+}</code></pre>
                     </div>
                 </section>
 

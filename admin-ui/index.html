@@ -30,6 +30,10 @@
                         <i class="ph ph-radio"></i>
                         Radios
                     </button>
+                    <button class="tab-btn" data-tab="guias">
+                        <i class="ph ph-book-open-text"></i>
+                        Guías
+                    </button>
                 </nav>
             </div>
         </header>
@@ -77,6 +81,26 @@
                     <div class="loading-state">
                         <i class="ph ph-spinner-gap spin"></i>
                         <p>Cargando radios...</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="guias-section" class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <h2>Guías de Estudio</h2>
+                        <span class="count-badge" id="guias-count">0</span>
+                    </div>
+                    <button class="btn-primary" id="add-guia-btn">
+                        <i class="ph ph-plus"></i>
+                        Agregar Guía
+                    </button>
+                </div>
+
+                <div class="cards-grid" id="guias-grid">
+                    <div class="loading-state">
+                        <i class="ph ph-spinner-gap spin"></i>
+                        <p>Cargando guías...</p>
                     </div>
                 </div>
             </section>
@@ -132,6 +156,34 @@
                     <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--color-border);">
                     <div class="import-summary" id="import-summary"></div>
                     <div class="import-list" id="import-list" style="max-height: 360px; overflow-y: auto; margin-top: 1rem;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GUÍA VIEWER MODAL -->
+    <div class="modal-overlay" id="guia-viewer-overlay">
+        <div class="modal modal-guia" id="guia-viewer-modal">
+            <div class="modal-header">
+                <div class="player-header-info">
+                    <span class="player-badge" id="guia-viewer-badge">Guía</span>
+                    <h3 id="guia-viewer-title">Guía de Estudio</h3>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                    <button class="btn-icon" id="guia-viewer-fullscreen" title="Pantalla completa" style="display:none">
+                        <i class="ph ph-arrows-out"></i>
+                    </button>
+                    <button class="modal-close" id="guia-viewer-close">
+                        <i class="ph ph-x"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="guia-meta" id="guia-viewer-meta"></div>
+                <div class="guia-content" id="guia-viewer-content"></div>
+                <div class="guia-verses" id="guia-viewer-verses">
+                    <h4>Versículos Referenciados</h4>
+                    <div id="guia-verses-list"></div>
                 </div>
             </div>
         </div>

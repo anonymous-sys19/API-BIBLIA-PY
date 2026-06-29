@@ -1,6 +1,9 @@
 import logging
 import re
 import os
+import time
+import hashlib
+from collections import defaultdict
 from datetime import datetime
 from contextlib import asynccontextmanager
 
@@ -8,14 +11,16 @@ import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from typing import Optional, List
 
-from app.db.database import BibliaEngine, StreamManager, VideoManager
-from app.db.models import RadioStream, Video, normalizar, BIBLIAS_VERSIONES
+from app.db.database import BibliaEngine, StreamManager, VideoManager, GuiaManager
+from app.db.models import RadioStream, Video, GuiaEstudio, normalizar, BIBLIAS_VERSIONES
 from app.db.ws_manager import ConnectionManager
 from app.services.import_service import YouTubeImporter
+from app.services.bible_ref import parse_referencia, marcar_referencias_html, extraer_tags_automaticos
 from app.files.doc.doc import doc_api_json
 
 load_dotenv()
@@ -47,6 +52,7 @@ TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN", "")
 
 stream_engine = StreamManager(TURSO_DB_URL, TURSO_AUTH_TOKEN)
 video_engine = VideoManager(TURSO_DB_URL, TURSO_AUTH_TOKEN)
+guia_engine = GuiaManager(TURSO_DB_URL, TURSO_AUTH_TOKEN)
 youtube_importer = YouTubeImporter()
 
 ws_manager = ConnectionManager()
@@ -58,6 +64,30 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=False
 )
+
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
+_rate_limit_store = defaultdict(list)
+RATE_LIMIT_WINDOW = 60
+RATE_LIMIT_MAX = 120
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    timestamps = _rate_limit_store[client_ip]
+    _rate_limit_store[client_ip] = [t for t in timestamps if now - t < RATE_LIMIT_WINDOW]
+    if len(_rate_limit_store[client_ip]) >= RATE_LIMIT_MAX:
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Demasiadas peticiones. Intenta de nuevo en un minuto."},
+            headers={"Retry-After": str(RATE_LIMIT_WINDOW)}
+        )
+    _rate_limit_store[client_ip].append(now)
+    response = await call_next(request)
+    return response
 
 ADMIN_UI_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "admin-ui")
 app.mount("/admin/static", StaticFiles(directory=ADMIN_UI_PATH), name="admin-static")
@@ -139,6 +169,15 @@ def get_verses_count(libro_id: int, chapter: int, version: Optional[str] = None)
 
 # --- LÓGICA DE RUTAS DINÁMICAS ---
 
+def _etag_response(data, request: Optional[Request] = None):
+    """Genera respuesta con ETag para caché del cliente."""
+    import json
+    body = json.dumps(data, default=str, ensure_ascii=False)
+    etag = hashlib.md5(body.encode()).hexdigest()
+    if request and request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers={"ETag": etag, "Cache-Control": "public, max-age=60"})
+    return JSONResponse(content=data, headers={"ETag": etag, "Cache-Control": "public, max-age=60"})
+
 def buscar_libro_id(nombre: str, version: Optional[str] = None) -> int:
     """Busca el ID del libro ignorando tildes y mayúsculas[cite: 1]."""
     libros = engine.obtener_libros(version)
@@ -165,6 +204,102 @@ def search(query: str, version: Optional[str] = None):
         "cantidad": len(resultados),
         "resultados": resultados
     }
+
+# --- Guías de Estudio (must be before catch-all routes) ---
+
+@app.get("/guide", tags=["Guías"])
+def listar_guias(request: Request, tag: Optional[str] = None, page: int = 1, limit: int = 20):
+    """Lista todas las guías de estudio con paginación. Filtra por tag opcional."""
+    page = max(1, page)
+    limit = min(max(1, limit), 100)
+    if tag:
+        guias, total = guia_engine.buscar_por_tag(tag.strip().lower(), page, limit)
+    else:
+        guias, total = guia_engine.listar_guias(page, limit)
+    return _etag_response({
+        "data": guias,
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "pages": (total + limit - 1) // limit if total > 0 else 0
+        }
+    }, request)
+
+@app.get("/guide/tags", tags=["Guías"])
+def listar_tags_guia(request: Request):
+    """Lista todos los tags disponibles de las guías."""
+    return _etag_response(guia_engine.listar_tags(), request)
+
+@app.get("/guide/{guia_id}", tags=["Guías"])
+def obtener_guia(request: Request, guia_id: int, html: Optional[bool] = False):
+    """Obtiene una guía por ID. Con ?html=true incluye el contenido HTML renderizado (desde caché)."""
+    guia = guia_engine.obtener_guia(guia_id)
+    if not guia:
+        raise HTTPException(status_code=404, detail="Guía no encontrada")
+    guia["versiculos"] = parse_referencia(guia["content"])
+    if not html:
+        guia.pop("content_html", None)
+    return _etag_response(guia, request)
+
+@app.get("/guide/{guia_id}/verses", tags=["Guías"])
+def obtener_versiculos_guia(request: Request, guia_id: int, version: Optional[str] = None):
+    """Obtiene los textos bíblicos de todas las referencias en la guía (batch lookup)."""
+    guia = guia_engine.obtener_guia(guia_id)
+    if not guia:
+        raise HTTPException(status_code=404, detail="Guía no encontrada")
+    refs = parse_referencia(guia["content"])
+    verse_keys = set()
+    for ref in refs:
+        if ref["verse_end"]:
+            for v in range(ref["verse_start"], ref["verse_end"] + 1):
+                verse_keys.add((ref["book_id"], ref["chapter"], v))
+        else:
+            verse_keys.add((ref["book_id"], ref["chapter"], ref["verse_start"]))
+    result = []
+    for book_id, chapter, verse in sorted(verse_keys):
+        verso = engine.get_verso(book_id, chapter, verse, version)
+        if verso:
+            result.append(verso.__dict__)
+    return _etag_response(result, request)
+
+@app.post("/guide/add", tags=["Guías"])
+async def agregar_guia(guia: GuiaEstudio):
+    """Agrega una nueva guía de estudio. Si no se proporcionan tags, se auto-extraen del contenido."""
+    if not guia.tags:
+        tags_auto = extraer_tags_automaticos(guia.content)
+        guia.tags = ", ".join(tags_auto)
+    guia_id = guia_engine.agregar_guia(guia)
+    if not guia_id:
+        raise HTTPException(status_code=400, detail="Error al agregar guía")
+    await ws_manager.broadcast("biblia", {
+        "type": "guide:created",
+        "data": {**guia.__dict__, "id": guia_id}
+    })
+    return {"status": "success", "id": guia_id, "mensaje": "Guía agregada"}
+
+@app.put("/guide/{guia_id}", tags=["Guías"])
+async def editar_guia(guia_id: int, guia: GuiaEstudio):
+    """Edita una guía de estudio existente."""
+    if guia_engine.editar_guia(guia_id, guia):
+        await ws_manager.broadcast("biblia", {
+            "type": "guide:updated",
+            "data": {**guia.__dict__, "id": guia_id}
+        })
+        return {"mensaje": "Guía actualizada"}
+    raise HTTPException(status_code=404, detail="Guía no encontrada")
+
+@app.delete("/guide/{guia_id}", tags=["Guías"])
+async def borrar_guia(guia_id: int):
+    """Elimina una guía de estudio."""
+    if guia_engine.eliminar_guia(guia_id):
+        await ws_manager.broadcast("biblia", {
+            "type": "guide:deleted",
+            "data": {"id": guia_id}
+        })
+        return {"mensaje": "Guía eliminada"}
+    raise HTTPException(status_code=404, detail="Guía no encontrada")
+
 @app.get("/{libro}/{capitulo}")
 def get_chapter(libro: str, capitulo: int, version: Optional[str] = None):
     """Endpoint juan/1 -> Retorna capítulo completo[cite: 1, 2]."""
@@ -455,3 +590,4 @@ async def editar_video(id: int, video: Video):
         })
         return {"mensaje": "Video actualizado"}
     raise HTTPException(status_code=404, detail="Video no encontrado")
+

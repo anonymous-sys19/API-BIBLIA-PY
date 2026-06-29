@@ -1,10 +1,11 @@
 import sqlite3
 import random
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from contextlib import contextmanager
 import libsql
-from app.db.models import RadioStream, Video, normalizar, Verso
+from app.db.models import RadioStream, Video, GuiaEstudio, normalizar, Verso
+from app.services.bible_ref import marcar_referencias_html, parse_referencia
 
 
 class BibliaEngine:
@@ -266,3 +267,172 @@ class VideoManager:
             )
             return cursor.rowcount > 0
         
+
+class GuiaManager:
+    def __init__(self, db_url: str, auth_token: str):
+        self.db_url = db_url
+        self.auth_token = auth_token
+        self._init_db()
+
+    def _get_connection(self):
+        return libsql.connect(self.db_url, auth_token=self.auth_token)
+
+    def _init_db(self):
+        with self._get_connection() as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS study_guides (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    author TEXT DEFAULT '',
+                    content TEXT NOT NULL,
+                    content_html TEXT DEFAULT '',
+                    tags TEXT DEFAULT '',
+                    cover_image TEXT DEFAULT '',
+                    status TEXT DEFAULT 'published',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS guide_tags (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    guide_id INTEGER NOT NULL,
+                    tag TEXT NOT NULL,
+                    FOREIGN KEY (guide_id) REFERENCES study_guides(id) ON DELETE CASCADE
+                )
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_guides_status ON study_guides(status)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_guides_created ON study_guides(created_at DESC)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_guide_tags_tag ON guide_tags(tag)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_guide_tags_guide_id ON guide_tags(guide_id)")
+            
+            try:
+                conn.execute("ALTER TABLE study_guides ADD COLUMN content_html TEXT DEFAULT ''")
+            except Exception:
+                pass
+
+    def listar_guias(self, page: int = 1, limit: int = 20) -> Tuple[List[Dict], int]:
+        offset = (page - 1) * limit
+        with self._get_connection() as conn:
+            total = conn.execute("SELECT COUNT(*) FROM study_guides").fetchone()[0]
+            result = conn.execute(
+                "SELECT id, title, author, tags, cover_image, status, created_at, updated_at FROM study_guides ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                [limit, offset]
+            )
+            columns = [desc[0] for desc in result.description]
+            rows = result.fetchall()
+            if not rows:
+                return [], total
+            guias = []
+            guide_ids = [row[0] for row in rows]
+            placeholders = ",".join("?" * len(guide_ids))
+            tags_result = conn.execute(
+                f"SELECT guide_id, tag FROM guide_tags WHERE guide_id IN ({placeholders})",
+                guide_ids
+            )
+            tags_map = {}
+            for gid, tag in tags_result.fetchall():
+                tags_map.setdefault(gid, []).append(tag)
+            for row in rows:
+                g = {col: val for col, val in zip(columns, row)}
+                g["tag_list"] = tags_map.get(g["id"], [])
+                guias.append(g)
+            return guias, total
+
+    def obtener_guia(self, guia_id: int) -> Optional[Dict]:
+        with self._get_connection() as conn:
+            result = conn.execute("SELECT * FROM study_guides WHERE id = ?", [guia_id])
+            row = result.fetchone()
+            if not row:
+                return None
+            columns = [desc[0] for desc in result.description]
+            g = {col: val for col, val in zip(columns, row)}
+            tags_result = conn.execute("SELECT tag FROM guide_tags WHERE guide_id = ?", [guia_id])
+            g["tag_list"] = [r[0] for r in tags_result.fetchall()]
+            if not g.get("content_html"):
+                g["content_html"] = marcar_referencias_html(g["content"])
+                conn.execute("UPDATE study_guides SET content_html = ? WHERE id = ?", [g["content_html"], guia_id])
+            return g
+
+    def agregar_guia(self, guia: GuiaEstudio) -> Optional[int]:
+        content_html = marcar_referencias_html(guia.content)
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                "INSERT INTO study_guides (title, author, content, content_html, tags, cover_image, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [guia.title, guia.author, guia.content, content_html, guia.tags, guia.cover_image, guia.status]
+            )
+            guia_id = cursor.lastrowid
+            self._sync_tags(conn, guia_id, guia.tags)
+            return guia_id
+
+    def editar_guia(self, guia_id: int, guia: GuiaEstudio) -> bool:
+        content_html = marcar_referencias_html(guia.content)
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                """UPDATE study_guides 
+                   SET title = ?, author = ?, content = ?, content_html = ?, tags = ?, cover_image = ?, status = ?, updated_at = CURRENT_TIMESTAMP 
+                   WHERE id = ?""",
+                [guia.title, guia.author, guia.content, content_html, guia.tags, guia.cover_image, guia.status, guia_id]
+            )
+            if cursor.rowcount > 0:
+                self._sync_tags(conn, guia_id, guia.tags)
+                return True
+            return False
+
+    def eliminar_guia(self, guia_id: int) -> bool:
+        with self._get_connection() as conn:
+            conn.execute("DELETE FROM guide_tags WHERE guide_id = ?", [guia_id])
+            cursor = conn.execute("DELETE FROM study_guides WHERE id = ?", [guia_id])
+            return cursor.rowcount > 0
+
+    def _sync_tags(self, conn, guia_id: int, tags_str: str):
+        conn.execute("DELETE FROM guide_tags WHERE guide_id = ?", [guia_id])
+        if not tags_str:
+            return
+        tags = [t.strip().lower() for t in tags_str.split(",") if t.strip()]
+        if tags:
+            conn.executemany(
+                "INSERT INTO guide_tags (guide_id, tag) VALUES (?, ?)",
+                [(guia_id, tag) for tag in tags]
+            )
+
+    def buscar_por_tag(self, tag: str, page: int = 1, limit: int = 20) -> Tuple[List[Dict], int]:
+        offset = (page - 1) * limit
+        with self._get_connection() as conn:
+            total = conn.execute(
+                "SELECT COUNT(DISTINCT sg.id) FROM study_guides sg JOIN guide_tags gt ON sg.id = gt.guide_id WHERE gt.tag = ? AND sg.status = 'published'",
+                [tag.lower()]
+            ).fetchone()[0]
+            result = conn.execute(
+                """SELECT sg.id, sg.title, sg.author, sg.tags, sg.cover_image, sg.status, sg.created_at, sg.updated_at
+                   FROM study_guides sg
+                   JOIN guide_tags gt ON sg.id = gt.guide_id
+                   WHERE gt.tag = ? AND sg.status = 'published'
+                   ORDER BY sg.created_at DESC
+                   LIMIT ? OFFSET ?""",
+                [tag.lower(), limit, offset]
+            )
+            columns = [desc[0] for desc in result.description]
+            rows = result.fetchall()
+            if not rows:
+                return [], total
+            guide_ids = [row[0] for row in rows]
+            placeholders = ",".join("?" * len(guide_ids))
+            tags_result = conn.execute(
+                f"SELECT guide_id, tag FROM guide_tags WHERE guide_id IN ({placeholders})",
+                guide_ids
+            )
+            tags_map = {}
+            for gid, t in tags_result.fetchall():
+                tags_map.setdefault(gid, []).append(t)
+            guias = []
+            for row in rows:
+                g = {col: val for col, val in zip(columns, row)}
+                g["tag_list"] = tags_map.get(g["id"], [])
+                guias.append(g)
+            return guias, total
+
+    def listar_tags(self) -> List[str]:
+        with self._get_connection() as conn:
+            result = conn.execute("SELECT DISTINCT tag FROM guide_tags ORDER BY tag ASC")
+            return [r[0] for r in result.fetchall()]

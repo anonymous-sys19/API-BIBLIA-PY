@@ -88,3 +88,16 @@ class Video:
     tipo: Optional[str] = "video"
     miniatura_url: Optional[str] = None
     fecha_registro: Optional[str] = None
+
+@dataclass
+class GuiaEstudio:
+    """Representa una guía de estudio bíblico."""
+    id: Optional[int]
+    title: str
+    author: str
+    content: str
+    tags: str = ""
+    cover_image: Optional[str] = None
+    status: str = "published"
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None

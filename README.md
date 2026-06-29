@@ -65,6 +65,23 @@ Bienvenido a la documentación oficial de **GhostRoot Bible API**, una solución
 | `PUT` | `/videos/{id}` | Editar metadatos del video. |
 | `DELETE` | `/videos/{id}` | Eliminar video. |
 
+### 📖 Guías de Estudio
+| Método | Endpoint | Descripción |
+| :--- | :--- | :--- |
+| `GET` | `/guide` | Listar guías paginadas (filtro `?tag=`, `?page=`, `?limit=`). |
+| `GET` | `/guide/tags` | Listar tags disponibles. |
+| `GET` | `/guide/{id}` | Detalle de guía con versículos parseados (`?html=true` para HTML renderizado). |
+| `GET` | `/guide/{id}/verses` | Textos bíblicos completos de las referencias (batch lookup). |
+| `POST` | `/guide/add` | Agregar nueva guía (tags auto-extraídos, HTML pre-computado). |
+| `PUT` | `/guide/{id}` | Editar guía (re-computa HTML cacheado). |
+| `DELETE` | `/guide/{id}` | Eliminar guía. |
+
+**Respuesta paginada:** `/guide` devuelve `{ "data": [...], "pagination": { "page": 1, "limit": 20, "total": 100, "pages": 5 } }`
+
+**Caché ETag:** Todas las respuestas incluyen headers `ETag` y `Cache-Control: max-age=60` para optimizar peticiones repetidas.
+
+**Enlaces de versículos:** Las referencias bíblicas en `content_html` apuntan directamente al versículo (ej: `/2 corintios/3/18`), no al capítulo completo.
+
 ---
 
 ## 💡 Modelos de Datos para Escritura

@@ -57,6 +57,24 @@ def doc_api_json(BIBLIAS: dict) -> dict:
             "PUT /videos/{id}",
             "DELETE /videos/{id}",
         },
+        "guide_endpoints": {
+            "GET /guide — lista guías paginadas (?tag=, ?page=, ?limit=)",
+            "GET /guide/tags — lista tags disponibles",
+            "GET /guide/{id} — detalle de guía (+ versículos parseados, ?html=true para HTML renderizado)",
+            "GET /guide/{id}/verses — textos bíblicos completos de la guía (batch lookup)",
+            "POST /guide/add — agregar guía (tags auto-extraídos, HTML pre-computado)",
+            "PUT /guide/{id} — editar guía (re-computa HTML cacheado)",
+            "DELETE /guide/{id} — eliminar guía",
+        },
+        "performance": {
+            "rate_limit": "120 requests/min por IP",
+            "pagination": "Default 20 items, max 100",
+            "etag_caching": "ETag + Cache-Control: max-age=60 en endpoints de guías",
+            "gzip_compression": "Respuestas > 500 bytes comprimidas automáticamente",
+            "precomputed_html": "content_html cacheado en DB al crear/editar guías",
+            "batch_verse_lookup": "Deduplica referencias en /guide/{id}/verses",
+            "database_indexes": "Índices en status, created_at, guide_tags"
+        },
         "websocket_endpoints": {
             "WS /ws/{channel} — canales: videos, streams, biblia",
             "Eventos en tiempo real tras mutaciones CRUD",

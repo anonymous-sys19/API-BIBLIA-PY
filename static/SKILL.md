@@ -432,7 +432,7 @@ Upgrades to a WebSocket connection.
 **Channels:**
 - `videos` — receives `video:created`, `video:updated`, `video:deleted` events
 - `streams` — receives `stream:created`, `stream:updated`, `stream:deleted` events
-- `biblia` — reserved for future use
+- `biblia` — receives `guide:created`, `guide:updated`, `guide:deleted` events
 
 **Event format:**
 ```json
@@ -453,6 +453,120 @@ ws.onmessage = (event) => {
 ```
 
 **Keep-alive:** Send `"ping"` — server replies `"pong"`. Auto-reconnect recommended.
+
+### Study Guide Endpoints
+
+Guías de estudio bíblico con referencias cruzadas a versículos. El contenido se renderiza como HTML con markdown y las referencias bíblicas se convierten en enlaces clickeables que apuntan directamente al versículo (ej: `/2 corintios/3/18`).
+
+#### GET /guide
+Returns paginated study guides. Optional `?tag=` filter.
+
+**Parameters:**
+- `tag` (query, optional): Filter by tag
+- `page` (query, optional): Page number (default: 1)
+- `limit` (query, optional): Items per page (default: 20, max: 100)
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "title": "Guía de Estudio Bíblico Integral",
+      "author": "Teólogo, historiador bíblico y pastor",
+      "tags": "discipulado, oracion, fe, gracia, santidad",
+      "tag_list": ["discipulado", "oracion", "fe"],
+      "status": "published",
+      "created_at": "2026-06-29 12:00:00"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 1,
+    "pages": 1
+  }
+}
+```
+
+**Caching:** Response includes `ETag` and `Cache-Control: max-age=60` headers.
+
+#### GET /guide/tags
+Returns all available tags.
+
+**Response:**
+```json
+["discipulado", "oracion", "fe", "santidad", "iglesia"]
+```
+
+#### GET /guide/{id}
+Returns full guide with parsed Bible references.
+
+**Parameters:**
+- `html` (query, optional): Set to `true` to get content with Bible refs as HTML links
+
+**Response:**
+```json
+{
+  "id": 1,
+  "title": "Guía de Estudio Bíblico Integral",
+  "content": "...",
+  "versiculos": [
+    {
+      "book_id": 48,
+      "book_name": "Gálatas",
+      "chapter": 4,
+      "verse_start": 19,
+      "reference": "Gálatas 4:19"
+    }
+  ],
+  "content_html": "<p>... <a href=\"/galatas/4/19\" class=\"bible-ref\">Gálatas 4:19</a> ...</p>"
+}
+```
+
+**Note:** `content_html` is pre-computed and cached in the database for performance. Bible reference links use spaces in book names (e.g., `/2 corintios/3/18`), which browsers encode as `%20`.
+
+**Caching:** Response includes `ETag` and `Cache-Control: max-age=60` headers.
+
+#### GET /guide/{id}/verses
+Returns full Bible verses for all references in the guide (batch lookup, deduplicates references).
+
+**Parameters:**
+- `version` (query, optional): Bible version code
+
+**Response:**
+```json
+[
+  {
+    "book_name": "Gálatas",
+    "chapter": 4,
+    "verse": 19,
+    "text": "Hijitos míos, por quienes vuelvo a sufrir dolores de parto...",
+    "version": "rvr1960"
+  }
+]
+```
+
+#### POST /guide/add
+Creates a new study guide. Tags auto-extracted from content if not provided. `content_html` is pre-computed on creation.
+
+**Request Body:**
+```json
+{
+  "id": null,
+  "title": "Guía de Estudio Bíblico Integral",
+  "author": "Autor",
+  "content": "Texto completo de la guía...",
+  "tags": "discipulado, oracion, fe",
+  "status": "published"
+}
+```
+
+#### PUT /guide/{id}
+Updates a study guide. Re-computes `content_html` cache.
+
+#### DELETE /guide/{id}
+Deletes a study guide.
 
 ## Data Models
 
@@ -584,8 +698,22 @@ curl /juan/3/16/nvi
 
 ## Rate Limiting
 
-- GET endpoints: No limit
-- POST/PUT/DELETE: 60 requests per minute
+- All endpoints: 120 requests per minute per IP
+- Exceeded requests return `429 Too Many Requests` with `Retry-After` header
+
+## Caching Strategy
+
+- **ETag headers:** All guide endpoints return `ETag` and `Cache-Control: max-age=60`
+- **Client-side caching:** Send `If-None-Match` header with the ETag value to receive `304 Not Modified` when content hasn't changed
+- **Server-side caching:** `content_html` is pre-computed and cached in the database on guide creation/update
+- **GZip compression:** Responses > 500 bytes are automatically compressed
+
+## Performance Optimizations
+
+- **Pagination:** Guide listings return paginated results (default: 20 items, max: 100)
+- **Batch verse lookup:** `/guide/{id}/verses` deduplicates references and fetches all verses in a single pass
+- **Database indexes:** Optimized queries on `status`, `created_at`, and `guide_tags`
+- **Pre-computed HTML:** Markdown rendering and Bible reference linking happens once on write, not on every read
 
 ## Admin Interface
 
