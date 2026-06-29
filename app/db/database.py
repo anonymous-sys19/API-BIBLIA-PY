@@ -169,7 +169,7 @@ class StreamManager:
         self.auth_token = auth_token
 
     def _get_connection(self):
-        return libsql.connect(self.db_url, auth_token=self.auth_token)
+        return libsql.connect(self.db_url, auth_token=self.auth_token) # type: ignore
 
     def agregar_radio(self, radio: RadioStream) -> int:
         url = radio.url_stream.strip()
@@ -235,7 +235,7 @@ class VideoManager:
         self.auth_token = auth_token
 
     def _get_connection(self):
-        return libsql.connect(self.db_url, auth_token=self.auth_token)
+        return libsql.connect(self.db_url, auth_token=self.auth_token) # type: ignore
 
     def agregar_video(self, video: Video) -> Optional[int]:
         with self._get_connection() as conn:
@@ -275,7 +275,7 @@ class GuiaManager:
         self._init_db()
 
     def _get_connection(self):
-        return libsql.connect(self.db_url, auth_token=self.auth_token)
+        return libsql.connect(self.db_url, auth_token=self.auth_token) # type: ignore
 
     def _init_db(self):
         with self._get_connection() as conn:
