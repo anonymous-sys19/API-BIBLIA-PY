@@ -18,7 +18,7 @@ if not DB_URL or not AUTH_TOKEN:
 
 
 def main():
-    conn = libsql.connect(DB_URL, auth_token=AUTH_TOKEN)
+    conn = libsql.connect(DB_URL, auth_token=AUTH_TOKEN) # type: ignore
 
     result = conn.execute(
         "SELECT id, video_id, tipo, miniatura_url FROM videos WHERE miniatura_url IS NULL OR miniatura_url = ''"

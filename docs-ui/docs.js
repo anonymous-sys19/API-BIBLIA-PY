@@ -1,4 +1,5 @@
 const API_BASE_URL = window.location.origin;
+const PRODUCTION_HOSTNAME = 'api-biblia-py.onrender.com'; // Define your production hostname here
 
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
@@ -51,7 +52,7 @@ function updateEnvironmentIndicator() {
     
     const hostname = window.location.hostname;
     const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('local');
-    const isProduction = hostname === 'api-biblia-py.onrender.com';
+    const isProduction = hostname === PRODUCTION_HOSTNAME; // Define this variable with your production hostname
     
     if (isProduction) {
         envBadge.className = 'env-badge production';

@@ -24,7 +24,7 @@ def benchmark_endpoint(name, method, url, iterations=10):
         times.append(elapsed)
     avg = sum(times) / len(times)
     p95 = sorted(times)[int(len(times) * 0.95)]
-    print(f"{name:40s} avg={avg:6.1f}ms  p95={p95:6.1f}ms  status={resp.status_code}")
+    print(f"{name:40s} avg={avg:6.1f}ms  p95={p95:6.1f}ms  status={resp.status_code}") # type: ignore
     return avg, p95
 
 print("=" * 80)

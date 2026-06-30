@@ -28,7 +28,7 @@ def _extract_thumbnail(entry: dict) -> Optional[str]:
 
 def _fetch_list(url: str, max_results: int = 50) -> List[Dict]:
     import yt_dlp
-    with yt_dlp.YoutubeDL({**_EXTRA_OPTS, "playlistend": max_results}) as ydl:
+    with yt_dlp.YoutubeDL({**_EXTRA_OPTS, "playlistend": max_results}) as ydl: # type: ignore
         try:
             info = ydl.extract_info(url, download=False)
             if not info:
