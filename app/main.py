@@ -93,15 +93,10 @@ ADMIN_UI_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "admin-
 app.mount("/admin/static", StaticFiles(directory=ADMIN_UI_PATH), name="admin-static")
 
 DOCS_UI_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "docs-ui")
-app.mount("/docs/static", StaticFiles(directory=DOCS_UI_PATH), name="docs-static")
+VITEDOCS_DIST = os.path.join(DOCS_UI_PATH, "docs", ".vitepress", "dist")
 
 STATIC_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
-
-@app.get("/", tags=["Documentation"])
-def docs_ui():
-    """Documentación formal de la API"""
-    return FileResponse(os.path.join(DOCS_UI_PATH, "index.html"))
 
 @app.get("/api-info", tags=["Info"])
 def api_info():
@@ -122,12 +117,7 @@ def download_skill():
 
 @app.get("/health", tags=["Health"])
 def health_check():
-    return {"status": "healthy", "version": "1.0.0"}
-
-@app.get("/", tags=["Docs"])
-def home():
-    """Información base de la API. tipo documentación interactiva"""
-    return doc_api_json(BIBLIAS)  
+    return {"status": "healthy", "version": "1.0.0"}  
 
 @app.get("/daily")
 def daily():
@@ -590,4 +580,40 @@ async def editar_video(id: int, video: Video):
         })
         return {"mensaje": "Video actualizado"}
     raise HTTPException(status_code=404, detail="Video no encontrado")
+
+# --- DOCS VITEPRESS (middleware para servir el build de VitePress) ---
+
+@app.middleware("http")
+async def vitepress_middleware(request: Request, call_next):
+    path = request.url.path
+
+    # Pasar por alto rutas de la API
+    api_prefixes = (
+        "/daily", "/list", "/info", "/search", "/guide",
+        "/stream", "/videos", "/ws", "/admin", "/static",
+        "/api-info", "/download", "/health", "/openapi",
+        "/docs", "/redoc"
+    )
+    if path.startswith(api_prefixes):
+        return await call_next(request)
+
+    # Pasar por alto referencias bíblicas /{libro}/{numero}
+    parts = [p for p in path.strip("/").split("/") if p]
+    if len(parts) >= 2:
+        try:
+            int(parts[1])
+            return await call_next(request)
+        except ValueError:
+            pass
+
+    # Servir desde el build de VitePress
+    docs_dir = VITEDOCS_DIST
+    if os.path.isdir(docs_dir):
+        rel_path = path.lstrip("/")
+        file_path = os.path.join(docs_dir, rel_path or "index.html")
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(docs_dir, "index.html"))
+
+    return await call_next(request)
 

@@ -253,10 +253,12 @@ Deletes a radio station.
 { "mensaje": "Radio eliminada" }
 ```
 
-### Video Endpoints
+### Video / Audio Endpoints
+
+Supports both **YouTube videos** and **Spotify tracks**. The API auto-detects the URL type.
 
 #### GET /videos
-Returns all registered videos.
+Returns all registered videos and audio tracks.
 
 **Response:**
 ```json
@@ -266,20 +268,38 @@ Returns all registered videos.
     "video_id": "PjYcsu7EnJE",
     "titulo": "Rio de Vida",
     "canal_autor": "ELOI",
-    "tipo": "video",
+    "tipo": "youtube",
     "miniatura_url": "https://i.ytimg.com/vi/PjYcsu7EnJE/hqdefault.jpg",
-    "fecha_registro": "2026-06-07 20:22:35"
+    "fecha_registro": "2026-06-07 20:22:35",
+    "embed_url": "https://www.youtube.com/embed/PjYcsu7EnJE",
+    "player_url": "https://www.youtube.com/watch?v=PjYcsu7EnJE"
+  },
+  {
+    "id": 42,
+    "video_id": "69hFBsRNHaKuCkraGiExgA",
+    "titulo": "Cuando Yo Te Conocí",
+    "canal_autor": "Artista",
+    "tipo": "spotify",
+    "miniatura_url": "https://i.scdn.co/image/...",
+    "fecha_registro": "2026-06-16 14:50:23",
+    "embed_url": "https://open.spotify.com/embed/track/69hFBsRNHaKuCkraGiExgA",
+    "player_url": "https://open.spotify.com/track/69hFBsRNHaKuCkraGiExgA"
   }
 ]
 ```
 
+**Fields:**
+- `tipo`: `"youtube"` | `"spotify"` — use to determine player type
+- `embed_url`: URL for iframe embedding (YouTube embed or Spotify widget)
+- `player_url`: Direct link to the content on the native platform
+
 #### POST /videos/add
-Registers a YouTube video (auto-extracts metadata).
+Registers a **single** YouTube video or Spotify track (auto-detects URL type, extracts metadata via oembed).
 
 **Parameters:**
-- `url` (query): Full YouTube URL
+- `url` (query): YouTube URL (`youtube.com/watch?v=...`, `youtu.be/...`) **or** Spotify URL (`open.spotify.com/track/...`)
 
-**Response:**
+**Response (success):**
 ```json
 {
   "status": "success",
@@ -288,8 +308,99 @@ Registers a YouTube video (auto-extracts metadata).
 }
 ```
 
+**Response (duplicate):**
+```json
+{
+  "detail": "El video 'PjYcsu7EnJE' ya existe en la base de datos"
+}
+```
+Status code: `409 Conflict`
+
+#### POST /videos/import
+Imports **multiple** videos from a YouTube channel or playlist. Uses `yt-dlp` (no API keys needed).
+
+**Supported URLs:**
+- YouTube playlist: `youtube.com/playlist?list=...`
+- YouTube channel: `youtube.com/@handle` or `youtube.com/channel/{id}`
+- YouTube custom URL: `youtube.com/c/name` or `youtube.com/user/name`
+
+**Parameters:**
+- `url` (query): Channel/playlist URL
+
+**Response:**
+```json
+{
+  "status": "success",
+  "type": "playlist",
+  "source_id": "PLHuD7OrIIOz...",
+  "imported": 12,
+  "skipped": 3,
+  "items": [
+    { "id": 42, "video_id": "dQw4w9WgXcQ" }
+  ]
+}
+```
+
+- `imported`: videos nuevos agregados
+- `skipped`: videos que ya existían (omitidos automáticamente)
+
+**Note:** Sin configuración — funciona con `yt-dlp`. Máximo 50 videos.
+
+#### POST /videos/import/preview
+Returns a list of videos from a collection **without importing them**. Use this to let users select which videos to import.
+
+**Request Body:**
+```json
+{
+  "url": "https://youtube.com/playlist?list=PLK13vpeAIKd..."
+}
+```
+
+**Response:**
+```json
+{
+  "url": "https://youtube.com/playlist?list=PLK13vpeAIKd...",
+  "total": 15,
+  "videos": [
+    {
+      "video_id": "dQw4w9WgXcQ",
+      "titulo": "Título del video",
+      "canal_autor": "Nombre del canal",
+      "miniatura_url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg"
+    }
+  ]
+}
+```
+
+#### POST /videos/import/selected
+Importa solo los videos seleccionados después de una vista previa.
+
+**Request Body:**
+```json
+{
+  "videos": [
+    {
+      "video_id": "dQw4w9WgXcQ",
+      "titulo": "Título del video",
+      "canal_autor": "Nombre del canal",
+      "miniatura_url": "https://i.ytimg.com/vi/.../hqdefault.jpg"
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "imported": 5,
+  "skipped": 1,
+  "items": [{ "id": 42, "video_id": "dQw4w9WgXcQ" }]
+}
+```
+
 #### PUT /videos/{id}
-Updates video metadata.
+Updates video/audio metadata.
 
 **Request Body:**
 ```json
@@ -298,23 +409,164 @@ Updates video metadata.
   "video_id": "PjYcsu7EnJE",
   "titulo": "Nuevo Titulo",
   "canal_autor": "Nuevo Canal",
-  "tipo": "video",
+  "tipo": "youtube",
   "miniatura_url": "https://nueva-url.com/thumb.jpg"
 }
 ```
 
-**Response:**
-```json
-{ "mensaje": "Video actualizado" }
-```
-
 #### DELETE /videos/{id}
-Deletes a video.
+Deletes a video or audio track.
 
 **Response:**
 ```json
 { "mensaje": "Video eliminado" }
 ```
+
+### Real-Time via WebSocket
+
+All mutations to streams and videos are broadcast in real-time to connected clients.
+
+#### GET /ws/{channel}
+Upgrades to a WebSocket connection.
+
+**Channels:**
+- `videos` — receives `video:created`, `video:updated`, `video:deleted` events
+- `streams` — receives `stream:created`, `stream:updated`, `stream:deleted` events
+- `biblia` — receives `guide:created`, `guide:updated`, `guide:deleted` events
+
+**Event format:**
+```json
+{
+  "type": "video:created",
+  "data": { "id": 38, "titulo": "...", "tipo": "youtube", ... }
+}
+```
+
+**Client example:**
+```javascript
+const ws = new WebSocket('wss://api-biblia-py.onrender.com/ws/videos');
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  // msg.type: "video:created" | "video:updated" | "video:deleted"
+  // msg.data: the affected resource
+};
+```
+
+**Keep-alive:** Send `"ping"` — server replies `"pong"`. Auto-reconnect recommended.
+
+### Study Guide Endpoints
+
+Guías de estudio bíblico con referencias cruzadas a versículos. El contenido se renderiza como HTML con markdown y las referencias bíblicas se convierten en enlaces clickeables que apuntan directamente al versículo (ej: `/2 corintios/3/18`).
+
+#### GET /guide
+Returns paginated study guides. Optional `?tag=` filter.
+
+**Parameters:**
+- `tag` (query, optional): Filter by tag
+- `page` (query, optional): Page number (default: 1)
+- `limit` (query, optional): Items per page (default: 20, max: 100)
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "title": "Guía de Estudio Bíblico Integral",
+      "author": "Teólogo, historiador bíblico y pastor",
+      "tags": "discipulado, oracion, fe, gracia, santidad",
+      "tag_list": ["discipulado", "oracion", "fe"],
+      "status": "published",
+      "created_at": "2026-06-29 12:00:00"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 1,
+    "pages": 1
+  }
+}
+```
+
+**Caching:** Response includes `ETag` and `Cache-Control: max-age=60` headers.
+
+#### GET /guide/tags
+Returns all available tags.
+
+**Response:**
+```json
+["discipulado", "oracion", "fe", "santidad", "iglesia"]
+```
+
+#### GET /guide/{id}
+Returns full guide with parsed Bible references.
+
+**Parameters:**
+- `html` (query, optional): Set to `true` to get content with Bible refs as HTML links
+
+**Response:**
+```json
+{
+  "id": 1,
+  "title": "Guía de Estudio Bíblico Integral",
+  "content": "...",
+  "versiculos": [
+    {
+      "book_id": 48,
+      "book_name": "Gálatas",
+      "chapter": 4,
+      "verse_start": 19,
+      "reference": "Gálatas 4:19"
+    }
+  ],
+  "content_html": "<p>... <a href=\"/galatas/4/19\" class=\"bible-ref\">Gálatas 4:19</a> ...</p>"
+}
+```
+
+**Note:** `content_html` is pre-computed and cached in the database for performance. Bible reference links use spaces in book names (e.g., `/2 corintios/3/18`), which browsers encode as `%20`.
+
+**Caching:** Response includes `ETag` and `Cache-Control: max-age=60` headers.
+
+#### GET /guide/{id}/verses
+Returns full Bible verses for all references in the guide (batch lookup, deduplicates references).
+
+**Parameters:**
+- `version` (query, optional): Bible version code
+
+**Response:**
+```json
+[
+  {
+    "book_name": "Gálatas",
+    "chapter": 4,
+    "verse": 19,
+    "text": "Hijitos míos, por quienes vuelvo a sufrir dolores de parto...",
+    "version": "rvr1960"
+  }
+]
+```
+
+#### POST /guide/add
+Creates a new study guide. Tags auto-extracted from content if not provided. `content_html` is pre-computed on creation.
+
+**Request Body:**
+```json
+{
+  "id": null,
+  "title": "Guía de Estudio Bíblico Integral",
+  "author": "Autor",
+  "content": "Texto completo de la guía...",
+  "tags": "discipulado, oracion, fe",
+  "status": "published"
+}
+```
+
+#### PUT /guide/{id}
+Updates a study guide. Re-computes `content_html` cache.
+
+#### DELETE /guide/{id}
+Deletes a study guide.
 
 ## Data Models
 
@@ -355,16 +607,18 @@ interface RadioStream {
 }
 ```
 
-### Video
+### Video / Audio
 ```typescript
 interface Video {
   id: number;
   video_id: string;
   titulo: string;
   canal_autor: string | null;
-  tipo: string;
+  tipo: "youtube" | "spotify";
   miniatura_url: string | null;
   fecha_registro: string | null;
+  embed_url: string;   // URL for iframe embedding
+  player_url: string;  // Direct link to platform
 }
 ```
 
@@ -382,6 +636,8 @@ All errors return JSON with a `detail` field:
 - `200`: Success
 - `400`: Bad Request (invalid input)
 - `404`: Not Found
+- `409`: Conflict (duplicate video)
+- `422`: Validation Error (FastAPI)
 - `500`: Internal Server Error
 
 ## Usage Examples
@@ -442,8 +698,22 @@ curl /juan/3/16/nvi
 
 ## Rate Limiting
 
-- GET endpoints: No limit
-- POST/PUT/DELETE: 60 requests per minute
+- All endpoints: 120 requests per minute per IP
+- Exceeded requests return `429 Too Many Requests` with `Retry-After` header
+
+## Caching Strategy
+
+- **ETag headers:** All guide endpoints return `ETag` and `Cache-Control: max-age=60`
+- **Client-side caching:** Send `If-None-Match` header with the ETag value to receive `304 Not Modified` when content hasn't changed
+- **Server-side caching:** `content_html` is pre-computed and cached in the database on guide creation/update
+- **GZip compression:** Responses > 500 bytes are automatically compressed
+
+## Performance Optimizations
+
+- **Pagination:** Guide listings return paginated results (default: 20 items, max: 100)
+- **Batch verse lookup:** `/guide/{id}/verses` deduplicates references and fetches all verses in a single pass
+- **Database indexes:** Optimized queries on `status`, `created_at`, and `guide_tags`
+- **Pre-computed HTML:** Markdown rendering and Bible reference linking happens once on write, not on every read
 
 ## Admin Interface
 

@@ -65,3 +65,8 @@ htmlcov/
 /url.html
 /crear.html
 /index.html
+
+# Node
+node_modules/
+docs-ui/.vitepress/dist/
+docs-ui/.vitepress/cache/
