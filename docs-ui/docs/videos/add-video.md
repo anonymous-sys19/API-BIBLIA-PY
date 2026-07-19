@@ -28,7 +28,7 @@ Registra un video desde URL de YouTube (extrae datos automáticamente)
 ```javascript
 const addYouTubeVideo = async (youtubeUrl) => {
   const response = await fetch(
-    `https://api.tu-dominio.com/videos/add?url=${encodeURIComponent(youtubeUrl)}`,
+    `BASE_URL/videos/add?url=${encodeURIComponent(youtubeUrl)}`,
     { method: 'POST' }
   );
 

@@ -8,7 +8,7 @@ Modifica una guía existente por su ID
 </div>
 
 ```bash
-curl -X PUT "https://api.tu-dominio.com/guide/1" \
+curl -X PUT "BASE_URL/guide/1" \
   -H "Content-Type: application/json" \
   -d '{
     "id": null,

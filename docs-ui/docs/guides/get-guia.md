@@ -8,7 +8,7 @@ Recupera una guía individual por su ID
 </div>
 
 ```bash
-curl -X GET "https://api.tu-dominio.com/guide/1"
+curl -X GET "BASE_URL/guide/1"
 ```
 
 ## Con HTML enriquecido
@@ -16,7 +16,7 @@ curl -X GET "https://api.tu-dominio.com/guide/1"
 Agrega `?html=true` para obtener el contenido con referencias bíblicas convertidas a enlaces interactivos.
 
 ```bash
-curl -X GET "https://api.tu-dominio.com/guide/1?html=true"
+curl -X GET "BASE_URL/guide/1?html=true"
 ```
 
 ## Respuesta

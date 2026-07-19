@@ -8,7 +8,7 @@ Obtén guías de estudio bíblico paginadas con filtros opcionales
 </div>
 
 ```bash
-curl -X GET "https://api.tu-dominio.com/guide"
+curl -X GET "BASE_URL/guide"
 ```
 
 ## Parámetros de Paginación
@@ -22,7 +22,7 @@ curl -X GET "https://api.tu-dominio.com/guide"
 ## Filtrar por Tag
 
 ```bash
-curl -X GET "https://api.tu-dominio.com/guide?tag=discipulado&page=1&limit=10"
+curl -X GET "BASE_URL/guide?tag=discipulado&page=1&limit=10"
 ```
 
 ## Respuesta Paginada
@@ -62,7 +62,7 @@ Las respuestas incluyen headers `ETag` y `Cache-Control: max-age=60` para optimi
 </div>
 
 ```bash
-curl -X GET "https://api.tu-dominio.com/guide/tags"
+curl -X GET "BASE_URL/guide/tags"
 ```
 
 ```json

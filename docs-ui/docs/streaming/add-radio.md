@@ -43,7 +43,7 @@ Registra una nueva estación de radio
 
 ```javascript
 const addRadio = async (radioData) => {
-  const response = await fetch('https://api.tu-dominio.com/stream/add', {
+  const response = await fetch('BASE_URL/stream/add', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(radioData)

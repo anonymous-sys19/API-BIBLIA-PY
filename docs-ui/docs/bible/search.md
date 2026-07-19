@@ -13,6 +13,8 @@ Búsqueda de texto en toda la Biblia (insensible a tildes)
 |-----------|------|-----------|-------------|
 | `query` | string | Sí | Texto a buscar (URL encoded) |
 | `version` | string | No | Versión bíblica (query param) |
+| `limit` | integer | No | Resultados por página (default: 30, max: 100) |
+| `offset` | integer | No | Desplazamiento para paginación (default: 0) |
 
 ## Respuesta
 
@@ -20,6 +22,7 @@ Búsqueda de texto en toda la Biblia (insensible a tildes)
 {
   "busqueda": "amor",
   "cantidad": 30,
+  "total": 142,
   "resultados": [
     {
       "id": 251,
@@ -35,7 +38,7 @@ Búsqueda de texto en toda la Biblia (insensible a tildes)
 ```
 
 ::: info
-La búsqueda retorna máximo 30 resultados. Es insensible a tildes, así que "amor" encuentra "amó".
+La búsqueda es insensible a tildes, así que "amor" encuentra "amó". Palabras de 1-2 caracteres se filtran automáticamente. Usa `limit` y `offset` para paginar.
 :::
 
 ## Ejemplos de Consumo
@@ -44,20 +47,20 @@ La búsqueda retorna máximo 30 resultados. Es insensible a tildes, así que "am
 
 ```bash [cURL]
 # Búsqueda básica
-curl "https://api.tu-dominio.com/search/amor"
+curl "BASE_URL/search/amor"
 
 # Con versión específica
-curl "https://api.tu-dominio.com/search/amor?version=nvi"
+curl "BASE_URL/search/amor?version=nvi"
 
 # Búsqueda con tildes (insensible)
-curl "https://api.tu-dominio.com/search/amó"
+curl "BASE_URL/search/amó"
 ```
 
 ```javascript [JavaScript]
 async function searchBible(query, version = 'rvr1960') {
   const encodedQuery = encodeURIComponent(query);
   const response = await fetch(
-    `https://api.tu-dominio.com/search/${encodedQuery}?version=${version}`
+    `BASE_URL/search/${encodedQuery}?version=${version}`
   );
 
   if (!response.ok) {
@@ -196,7 +199,7 @@ class SearchResponse:
 def search_bible(query: str, version: str = 'rvr1960') -> SearchResponse:
     """Busca texto en la Biblia. Insensible a tildes."""
     encoded_query = quote(query)
-    url = f"https://api.tu-dominio.com/search/{encoded_query}?version={version}"
+    url = f"BASE_URL/search/{encoded_query}?version={version}"
 
     response = requests.get(url, timeout=10)
     response.raise_for_status()
@@ -247,7 +250,7 @@ data class SearchResponse(
 
 class BibleSearchClient {
     private val client = HttpClient()
-    private val baseUrl = "https://api.tu-dominio.com"
+    private val baseUrl = "BASE_URL"
 
     suspend fun search(query: String, version: String = "rvr1960"): SearchResponse {
         return client.get("$baseUrl/search/${query.encodeURLPath()}") {
@@ -301,7 +304,7 @@ struct SearchResponse: Codable {
 }
 
 class BibleSearchClient {
-    private let baseURL = "https://api.tu-dominio.com"
+    private let baseURL = "BASE_URL"
 
     func search(query: String, version: String = "rvr1960") async throws -> SearchResponse {
         let encodedQuery = query.addingPercentEncoding(

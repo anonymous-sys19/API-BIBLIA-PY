@@ -8,13 +8,13 @@ Textos bíblicos completos de todas las referencias en la guía (batch lookup co
 </div>
 
 ```bash
-curl -X GET "https://api.tu-dominio.com/guide/1/verses"
+curl -X GET "BASE_URL/guide/1/verses"
 ```
 
 ## Con versión específica
 
 ```bash
-curl -X GET "https://api.tu-dominio.com/guide/1/verses?version=nvi"
+curl -X GET "BASE_URL/guide/1/verses?version=nvi"
 ```
 
 ## Respuesta

@@ -8,7 +8,7 @@ Crea una nueva guía de estudio bíblico
 </div>
 
 ```bash
-curl -X POST "https://api.tu-dominio.com/guide/add" \
+curl -X POST "BASE_URL/guide/add" \
   -H "Content-Type: application/json" \
   -d '{
     "id": null,

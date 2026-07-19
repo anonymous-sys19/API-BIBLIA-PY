@@ -30,7 +30,7 @@ Retorna todos los testamentos disponibles
 
 ```javascript
 const getTestaments = async () => {
-  const response = await fetch('https://api.tu-dominio.com/list/testaments');
+  const response = await fetch('BASE_URL/list/testaments');
   const testaments = await response.json();
 
   testaments.forEach(t => {

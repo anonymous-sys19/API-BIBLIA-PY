@@ -18,5 +18,5 @@ Elimina una estación de radio
 ## Ejemplo
 
 ```bash
-curl -X DELETE https://api.tu-dominio.com/stream/5
+curl -X DELETE BASE_URL/stream/5
 ```

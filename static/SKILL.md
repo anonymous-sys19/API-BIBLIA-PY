@@ -31,6 +31,28 @@ The API automatically detects the environment. Use the appropriate base URL for 
 
 ## Endpoints
 
+### API Info Endpoints
+
+#### GET /api-info
+Returns complete API metadata as JSON, including available Bible versions and their file paths.
+
+**Response:**
+```json
+{
+  "nombre": "GhostRoot Bible API",
+  "version": "1.0.0",
+  "biblias": {
+    "rvr1960": "app/files/rvr1960.sqlite",
+    "nvi": "app/files/NVI1999.sqlite"
+  }
+}
+```
+
+#### GET /download/skill
+Downloads this SKILL.md file for integration with AI assistants.
+
+**Response:** Markdown file attachment.
+
 ### Bible Endpoints
 
 #### GET /health
@@ -65,6 +87,25 @@ Returns a random daily verse that changes each day.
 
 #### GET /daily/{version}
 Returns daily verse in specified version.
+
+#### GET /random
+Returns a completely random verse (changes on every request, no daily seed).
+
+**Parameters:**
+- `version` (query, optional): Bible version code (default: rvr1960)
+
+**Response:**
+```json
+{
+  "id": 27845,
+  "book_id": 44,
+  "book_name": "Hechos",
+  "chapter": 26,
+  "verse": 21,
+  "text": "Por causa de esto los judios, prendiendome en el templo, intentaron matarme.",
+  "version": "rvr1960"
+}
+```
 
 #### GET /list/testaments
 Returns all available testaments.
@@ -103,6 +144,23 @@ Shortcut for Old Testament books.
 
 #### GET /list/books/nuevo
 Shortcut for New Testament books.
+
+#### GET /books/{book_id}
+Returns a single Bible book by its numeric ID.
+
+**Parameters:**
+- `version` (query, optional): Bible version
+
+**Response:**
+```json
+{
+  "id": 1,
+  "name": "Genesis",
+  "abbreviation": "Gen",
+  "testament_id": 1,
+  "testament": "Old Testament"
+}
+```
 
 #### GET /info/chapters/{libro_id}
 Returns chapter count for a book.
@@ -171,12 +229,15 @@ Searches Bible text (accent/case insensitive).
 **Parameters:**
 - `query` (path): Search text (URL encoded)
 - `version` (query, optional): Bible version
+- `limit` (query, optional): Results per page (default: 30, max: 100)
+- `offset` (query, optional): Pagination offset (default: 0)
 
 **Response:**
 ```json
 {
   "busqueda": "amor",
   "cantidad": 30,
+  "total": 142,
   "resultados": [
     {
       "id": 251,
@@ -191,14 +252,18 @@ Searches Bible text (accent/case insensitive).
 }
 ```
 
-**Note:** Maximum 30 results returned.
+**Note:** Words of 1-2 characters are automatically filtered out for accuracy. Use `limit` and `offset` for pagination.
 
 ### Radio Streaming Endpoints
 
 #### GET /stream
 Returns all registered radio stations.
 
-**Response:**
+**Parameters:**
+- `page` (query, optional): Page number (enables paginated response)
+- `limit` (query, optional): Items per page when paginated (default: 20, max: 100)
+
+**Response (all):**
 ```json
 [
   {
@@ -211,6 +276,19 @@ Returns all registered radio stations.
     "status": "online"
   }
 ]
+```
+
+**Response (paginated):**
+```json
+{
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 5,
+    "pages": 1
+  }
+}
 ```
 
 #### POST /stream/add
@@ -260,7 +338,11 @@ Supports both **YouTube videos** and **Spotify tracks**. The API auto-detects th
 #### GET /videos
 Returns all registered videos and audio tracks.
 
-**Response:**
+**Parameters:**
+- `page` (query, optional): Page number (enables paginated response)
+- `limit` (query, optional): Items per page when paginated (default: 20, max: 100)
+
+**Response (all):**
 ```json
 [
   {
@@ -286,6 +368,19 @@ Returns all registered videos and audio tracks.
     "player_url": "https://open.spotify.com/track/69hFBsRNHaKuCkraGiExgA"
   }
 ]
+```
+
+**Response (paginated):**
+```json
+{
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 50,
+    "pages": 3
+  }
+}
 ```
 
 **Fields:**
@@ -695,6 +790,11 @@ curl /juan/3/16/nvi
 - **Case-insensitive**: All searches are case-insensitive
 - **Flexible book names**: Use full name or abbreviation (e.g., "genesis" or "gen")
 - **Multiple versions**: 8 Spanish Bible translations available
+- **Auto-corrección de caracteres RTF**: Los textos bíblicos se limpian automáticamente de códigos RTF y escapes hexadecimales (ej: `\'e1` → `á`)
+- **Parcheo de testament_id**: Los IDs de testamento se corrigen dinámicamente según el canon estándar (1-39: AT, 40-66: NT, 66+: Apócrifos)
+- **Auto-extracción de tags**: Si no se proporcionan tags al crear una guía de estudio, se extraen automáticamente del contenido
+- **Auto-corrección URL streaming**: Las URLs de streaming se normalizan agregando `;/` al final si falta
+- **Filtro de palabras cortas**: En búsquedas, palabras de 1-2 caracteres se filtran automáticamente para mejorar precisión
 
 ## Rate Limiting
 

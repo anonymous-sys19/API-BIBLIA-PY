@@ -33,18 +33,51 @@ Retorna un versículo aleatorio que cambia cada día
 
 ## Ejemplos de Consumo
 
+# Versículo Aleatorio
+
+Retorna un versículo completamente aleatorio (cambia en cada llamado)
+
+<div class="endpoint-badge">
+  <span class="method get">GET</span>
+  <code class="endpoint-path">/random</code>
+</div>
+
+## Parámetros
+
+| Parámetro | Tipo | Requerido | Descripción |
+|-----------|------|-----------|-------------|
+| `version` | string | No | Versión bíblica (default: rvr1960) |
+
+## Respuesta
+
+```json
+{
+  "id": 27845,
+  "book_id": 44,
+  "book_name": "Hechos",
+  "chapter": 26,
+  "verse": 21,
+  "text": "Por causa de esto los judíos, prendiéndome en el templo, intentaron matarme.",
+  "version": "rvr1960"
+}
+```
+
+::: info
+A diferencia de `/daily`, este endpoint no usa semilla diaria — cada llamado retorna un versículo diferente.
+:::
+
 ::: code-group
 
 ```bash [cURL]
-curl https://api.tu-dominio.com/daily
+curl BASE_URL/daily
 
 # Con versión específica
-curl https://api.tu-dominio.com/daily/nvi
+curl BASE_URL/daily/nvi
 ```
 
 ```javascript [JavaScript (Express/Node.js)]
 const getDailyVerse = async (version = 'rvr1960') => {
-  const response = await fetch(`https://api.tu-dominio.com/daily/${version}`);
+  const response = await fetch(`BASE_URL/daily/${version}`);
 
   if (!response.ok) {
     throw new Error(`Error: ${response.status}`);
@@ -137,7 +170,7 @@ interface BibleVerse {
 
 type BibleVersion = 'rvr1960' | 'nvi' | 'ntv' | 'pdt' | 'bad' | 'blsee' | 'rvc' | 'rvg';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.tu-dominio.com';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'BASE_URL';
 
 async function getDailyVerse(version: BibleVersion = 'rvr1960'): Promise<BibleVerse> {
   const response = await fetch(`${API_BASE}/daily/${version}`, {
@@ -192,7 +225,7 @@ class BibleVerse:
 
 def get_daily_verse(version: str = 'rvr1960') -> BibleVerse:
     """Obtiene el versículo diario de la API."""
-    url = f"https://api.tu-dominio.com/daily/{version}"
+    url = f"BASE_URL/daily/{version}"
 
     response = requests.get(url, timeout=10)
     response.raise_for_status()
@@ -226,7 +259,7 @@ data class BibleVerse(
 
 class BibleApiClient {
     private val client = HttpClient(CIO)
-    private val baseUrl = "https://api.tu-dominio.com"
+    private val baseUrl = "BASE_URL"
 
     suspend fun getDailyVerse(version: String = "rvr1960"): BibleVerse {
         return client.get("$baseUrl/daily/$version").body()
@@ -279,7 +312,7 @@ struct BibleVerse: Codable, Identifiable {
 }
 
 class BibleAPIClient {
-    private let baseURL = "https://api.tu-dominio.com"
+    private let baseURL = "BASE_URL"
 
     func getDailyVerse(version: String = "rvr1960") async throws -> BibleVerse {
         guard let url = URL(string: "\(baseURL)/daily/\(version)") else {

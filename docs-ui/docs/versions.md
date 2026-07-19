@@ -17,7 +17,7 @@
 
 ```bash
 # Usar NVI en lugar de RVR1960
-curl https://api.tu-dominio.com/daily/nvi
-curl https://api.tu-dominio.com/juan/3/16/nvi
-curl "https://api.tu-dominio.com/search/amor?version=pdt"
+curl BASE_URL/daily/nvi
+curl BASE_URL/juan/3/16/nvi
+curl "BASE_URL/search/amor?version=pdt"
 ```

@@ -7,7 +7,14 @@ Retorna todas las estaciones de radio registradas
   <code class="endpoint-path">/stream</code>
 </div>
 
-## Respuesta
+## Parámetros
+
+| Parámetro | Tipo | Requerido | Descripción |
+|-----------|------|-----------|-------------|
+| `page` | integer | No | Número de página (activa respuesta paginada) |
+| `limit` | integer | No | Items por página (default: 20, max: 100) |
+
+## Respuesta (completa)
 
 ```json
 [
@@ -21,6 +28,20 @@ Retorna todas las estaciones de radio registradas
     "status": "online"
   }
 ]
+```
+
+## Respuesta (paginada)
+
+```json
+{
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 5,
+    "pages": 1
+  }
+}
 ```
 
 ## Campos

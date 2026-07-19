@@ -38,11 +38,11 @@ Retorna un versículo específico
 
 ```bash
 # Juan 3:16
-curl https://api.tu-dominio.com/juan/3/16
+curl BASE_URL/juan/3/16
 
 # Con versión en path
-curl https://api.tu-dominio.com/juan/3/16/nvi
+curl BASE_URL/juan/3/16/nvi
 
 # Con versión en query
-curl "https://api.tu-dominio.com/juan/3/16?version=nvi"
+curl "BASE_URL/juan/3/16?version=nvi"
 ```

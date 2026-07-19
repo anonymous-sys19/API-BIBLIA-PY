@@ -60,6 +60,28 @@ class BibliaEngine:
                 books.append(b)
             return books
 
+    def obtener_libro_por_id(self, book_id: int, version: Optional[str] = None) -> Optional[Dict]:
+        """Retorna un libro individual por su ID con corrección de testamento."""
+        with self._get_connection(version) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, name FROM testament")
+            test_names = {row['id']: row['name'] for row in cursor.fetchall()}
+            cursor.execute("SELECT id, name, abbreviation, testament_id FROM book WHERE id = ?", [book_id])
+            row = cursor.fetchone()
+            if not row:
+                return None
+            b = dict(row)
+            correct_tid = b['testament_id']
+            if 1 <= b['id'] <= 39:
+                correct_tid = 1
+            elif 40 <= b['id'] <= 66:
+                correct_tid = 2
+            elif b['id'] > 66:
+                correct_tid = 3
+            b['testament_id'] = correct_tid
+            b['testament'] = test_names.get(correct_tid, "Unknown")
+            return b
+
     def obtener_testamentos(self, version: Optional[str] = None) -> List[Dict]:
         """Retorna la lista de testamentos (Antiguo, Nuevo, etc.)."""
         with self._get_connection(version) as conn:
@@ -130,35 +152,58 @@ class BibliaEngine:
             """, (random_id,))
             return Verso(*cursor.fetchone(), version=v_activa)
 
-    def buscar_texto(self, query: str, version: Optional[str] = None) -> List[Verso]:
+    def get_verso_aleatorio(self, version: Optional[str] = None) -> Verso:
+        """Retorna un verso completamente aleatorio (sin semilla, cambia en cada llamado)."""
+        v_activa = version or self.default_version
+        with self._get_connection(v_activa) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM verse")
+            total = cursor.fetchone()[0]
+            random_id = random.randint(1, total)
+            cursor.execute("""
+                SELECT v.id, v.book_id, b.name, v.chapter, v.verse, v.text 
+                FROM verse v JOIN book b ON v.book_id = b.id WHERE v.id = ?
+            """, (random_id,))
+            return Verso(*cursor.fetchone(), version=v_activa)
+
+    def buscar_texto(self, query: str, version: Optional[str] = None, limit: int = 30, offset: int = 0) -> Tuple[List[Verso], int]:
         """Busca coincidencias cercanas permitiendo palabras en cualquier orden[cite: 1, 3].
+        Retorna (resultados, total_count).
         """
         v_activa = version or self.default_version
         # 1. Normalizamos y dividimos en palabras (filtramos palabras de 1-2 letras para precisión)
         palabras = [normalizar(p) for p in query.split() if len(p) > 2]
         
         if not palabras:
-            return []
+            return [], 0
 
         with self._get_connection(v_activa) as conn:
             conn.create_function("NORM", 1, normalizar)
             cursor = conn.cursor()
             
             # 2. Construimos dinámicamente el WHERE con múltiples LIKE
-            # Resultado esperado: WHERE NORM(v.text) LIKE ? AND NORM(v.text) LIKE ? ...
             condiciones = " AND ".join(["NORM(v.text) LIKE ?" for _ in palabras])
             parametros = [f"%{p}%" for p in palabras]
+            
+            count_sql = f"""
+                SELECT COUNT(*) 
+                FROM verse v 
+                JOIN book b ON v.book_id = b.id 
+                WHERE {condiciones}
+            """
+            cursor.execute(count_sql, parametros)
+            total = cursor.fetchone()[0]
             
             sql = f"""
                 SELECT v.id, v.book_id, b.name, v.chapter, v.verse, v.text 
                 FROM verse v 
                 JOIN book b ON v.book_id = b.id 
                 WHERE {condiciones}
-                LIMIT 30
+                LIMIT ? OFFSET ?
             """
             
-            cursor.execute(sql, parametros)
-            return [Verso(*row, version=v_activa) for row in cursor.fetchall()]
+            cursor.execute(sql, parametros + [limit, offset])
+            return [Verso(*row, version=v_activa) for row in cursor.fetchall()], total
         
 # Radios
 
@@ -183,12 +228,19 @@ class StreamManager:
             )
             return cursor.lastrowid
 
-    def listar_radios(self) -> List[RadioStream]:
+    def listar_radios(self, limit: int = 0, offset: int = 0) -> List[RadioStream]:
         with self._get_connection() as conn:
-            result = conn.execute("SELECT * FROM streams ORDER BY nombre ASC")
+            if limit > 0:
+                result = conn.execute("SELECT * FROM streams ORDER BY nombre ASC LIMIT ? OFFSET ?", [limit, offset])
+            else:
+                result = conn.execute("SELECT * FROM streams ORDER BY nombre ASC")
             columns = [desc[0] for desc in result.description]
             rows = result.fetchall()
             return [RadioStream(**{col: val for col, val in zip(columns, row)}) for row in rows]
+
+    def contar_radios(self) -> int:
+        with self._get_connection() as conn:
+            return conn.execute("SELECT COUNT(*) FROM streams").fetchone()[0]
 
     def eliminar_radio(self, radio_id: int) -> bool:
         with self._get_connection() as conn:
@@ -247,12 +299,19 @@ class VideoManager:
                 return None
             return cursor.lastrowid
 
-    def listar_videos(self) -> List[Video]:
+    def listar_videos(self, limit: int = 0, offset: int = 0) -> List[Video]:
         with self._get_connection() as conn:
-            result = conn.execute("SELECT * FROM videos ORDER BY fecha_registro DESC")
+            if limit > 0:
+                result = conn.execute("SELECT * FROM videos ORDER BY fecha_registro DESC LIMIT ? OFFSET ?", [limit, offset])
+            else:
+                result = conn.execute("SELECT * FROM videos ORDER BY fecha_registro DESC")
             columns = [desc[0] for desc in result.description]
             rows = result.fetchall()
             return [Video(**{col: val for col, val in zip(columns, row)}) for row in rows]
+
+    def contar_videos(self) -> int:
+        with self._get_connection() as conn:
+            return conn.execute("SELECT COUNT(*) FROM videos").fetchone()[0]
 
     def eliminar_video(self, video_id_db: int) -> bool:
         with self._get_connection() as conn:

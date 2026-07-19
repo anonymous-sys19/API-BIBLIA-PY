@@ -9,6 +9,45 @@ export default defineConfig({
     ['link', { rel: 'icon', type: 'image/jpeg', href: '/img/icon.jpg' }],
     ['link', { rel: 'apple-touch-icon', href: '/img/icon.jpg' }],
     ['link', { rel: 'stylesheet', href: 'https://unpkg.com/@phosphor-icons/web' }],
+    ['script', { defer: true }, `
+(function(){
+  function replaceBaseUrl(){
+    var baseUrl = location.origin;
+    var root = document.querySelector('.vp-doc') || document.body;
+    if (!root) return;
+    var iter = document.createNodeIterator(root, NodeFilter.SHOW_TEXT, null, false);
+    var n;
+    while (n = iter.nextNode()) {
+      if (n.nodeValue.indexOf('BASE_URL') !== -1) {
+        n.nodeValue = n.nodeValue.replace(/BASE_URL/g, baseUrl);
+      }
+    }
+    var local = baseUrl.indexOf('localhost') !== -1 || baseUrl.indexOf('127.0.0.1') !== -1;
+    document.querySelectorAll('.env-badge').forEach(function(el){
+      el.textContent = local ? 'Local' : 'Producci\u00f3n';
+      el.className = 'env-badge ' + (local ? 'local' : 'production');
+    });
+    document.querySelectorAll('.env-description').forEach(function(el){
+      el.textContent = local ? 'Entorno de desarrollo local' : 'Entorno de producci\u00f3n';
+    });
+    document.querySelectorAll('.base-url-display').forEach(function(el){
+      el.textContent = baseUrl;
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(replaceBaseUrl, 100); });
+  } else {
+    setTimeout(replaceBaseUrl, 100);
+  }
+
+  var docEl = document.querySelector('.vp-doc');
+  if (docEl) {
+    var obs = new MutationObserver(function(){ replaceBaseUrl(); });
+    obs.observe(docEl, { childList: true, subtree: false });
+  }
+})();
+`],
   ],
 
   themeConfig: {
@@ -36,8 +75,10 @@ export default defineConfig({
         text: 'Biblia',
         items: [
           { text: 'Versículo Diario', link: '/bible/daily-verse' },
+          { text: 'Versículo Aleatorio', link: '/bible/random-verse' },
           { text: 'Lista de Testamentos', link: '/bible/list-testaments' },
           { text: 'Lista de Libros', link: '/bible/list-books' },
+          { text: 'Libro por ID', link: '/bible/book-by-id' },
           { text: 'Cantidad de Capítulos', link: '/bible/chapter-count' },
           { text: 'Cantidad de Versículos', link: '/bible/verse-count' },
           { text: 'Obtener Capítulo', link: '/bible/get-chapter' },

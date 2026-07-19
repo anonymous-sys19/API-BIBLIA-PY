@@ -51,7 +51,7 @@ Retorna todos los versículos de un capítulo
 // Por nombre
 const getChapter = async (libro, capitulo, version = 'rvr1960') => {
   const response = await fetch(
-    `https://api.tu-dominio.com/${libro}/${capitulo}?version=${version}`
+    `BASE_URL/${libro}/${capitulo}?version=${version}`
   );
   return await response.json();
 };
@@ -59,7 +59,7 @@ const getChapter = async (libro, capitulo, version = 'rvr1960') => {
 // Por ID
 const getChapterById = async (bookId, chapter, version = 'rvr1960') => {
   const response = await fetch(
-    `https://api.tu-dominio.com/bible/${bookId}/${chapter}?version=${version}`
+    `BASE_URL/bible/${bookId}/${chapter}?version=${version}`
   );
   return await response.json();
 };

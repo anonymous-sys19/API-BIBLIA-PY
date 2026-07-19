@@ -27,7 +27,7 @@ Retorna el número total de versículos de un capítulo
 
 ```bash
 # Génesis capítulo 1 tiene 31 versículos
-curl https://api.tu-dominio.com/info/verses/1/1
+curl BASE_URL/info/verses/1/1
 
 # Respuesta: {"total": 31}
 ```

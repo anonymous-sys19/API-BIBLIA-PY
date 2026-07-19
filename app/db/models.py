@@ -59,15 +59,6 @@ class Verso:
         self.text = corregir_formato(self.text)
 
 @dataclass
-class Libro:
-    id: int
-    name: str
-    abbreviation: str
-    chapters: int
-    testament: str
-
-
-@dataclass
 class RadioStream:
     """Representa una emisora de radio en el sistema."""
     id: Optional[int]

@@ -26,7 +26,7 @@ Retorna el número total de capítulos de un libro
 
 ```bash
 # Génesis tiene 50 capítulos
-curl https://api.tu-dominio.com/info/chapters/1
+curl BASE_URL/info/chapters/1
 
 # Respuesta: {"total": 50}
 ```

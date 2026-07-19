@@ -8,7 +8,7 @@ Elimina permanentemente una guía y sus etiquetas
 </div>
 
 ```bash
-curl -X DELETE "https://api.tu-dominio.com/guide/1"
+curl -X DELETE "BASE_URL/guide/1"
 ```
 
 ## Respuesta

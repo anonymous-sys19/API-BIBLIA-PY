@@ -129,6 +129,11 @@ def daily_with_version(version: Optional[str] = None):
     """Endpoint del pasaje bíblico diario con versión especificada[cite: 1]."""
     return engine.get_pasaje_diario(version)
 
+@app.get("/random")
+def random_verse(version: Optional[str] = None):
+    """Retorna un versículo completamente aleatorio (cambia en cada llamado)."""
+    return engine.get_verso_aleatorio(version)
+
 @app.get("/list/testaments")
 def list_testaments(version: Optional[str] = None):
     """Lista los testamentos disponibles."""
@@ -148,6 +153,14 @@ def list_old_testament(version: Optional[str] = None):
 def list_new_testament(version: Optional[str] = None):
     """Acceso rápido al Nuevo Testamento."""
     return engine.obtener_libros(version, testament_id=2)
+
+@app.get("/books/{book_id}")
+def get_book(book_id: int, version: Optional[str] = None):
+    """Retorna un libro individual por su ID."""
+    libro = engine.obtener_libro_por_id(book_id, version)
+    if not libro:
+        raise HTTPException(status_code=404, detail=f"Libro con ID '{book_id}' no encontrado")
+    return libro
 
 @app.get("/info/chapters/{libro_id}")
 def get_chapters_count(libro_id: int, version: Optional[str] = None):
@@ -178,20 +191,23 @@ def buscar_libro_id(nombre: str, version: Optional[str] = None) -> int:
     raise HTTPException(status_code=404, detail=f"Libro '{nombre}' no encontrado")
 
 @app.get("/search/{query}")
-def search(query: str, version: Optional[str] = None):
+def search(query: str, version: Optional[str] = None, limit: int = 30, offset: int = 0):
     """
     Ahora acepta 'amor al projimo' y encontrará '...amó al prójimo...'[cite: 1, 2].
     """
-    # Limpiamos posibles espacios extra al inicio o final
     query_limpia = query.strip()
     
     if not query_limpia:
         return []
-        
-    resultados = engine.buscar_texto(query_limpia, version)
+    
+    limit = min(max(1, limit), 100)
+    offset = max(0, offset)
+    
+    resultados, total = engine.buscar_texto(query_limpia, version, limit=limit, offset=offset)
     return {
         "busqueda": query_limpia,
         "cantidad": len(resultados),
+        "total": total,
         "resultados": resultados
     }
 
@@ -333,7 +349,22 @@ async def ws_realtime(ws: WebSocket, channel: str):
 
 
 @app.get("/stream", tags=["Streaming"])
-def listar_radios():
+def listar_radios(request: Request, page: Optional[int] = None, limit: Optional[int] = None):
+    if page is not None or limit is not None:
+        page = max(1, page or 1)
+        limit = min(max(1, limit or 20), 100)
+        offset = (page - 1) * limit
+        radios = stream_engine.listar_radios(limit=limit, offset=offset)
+        total = stream_engine.contar_radios()
+        return _etag_response({
+            "data": [dict(r.__dict__) for r in radios],
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total,
+                "pages": (total + limit - 1) // limit if total > 0 else 0
+            }
+        }, request)
     return stream_engine.listar_radios()
 
 @app.post("/stream/add", tags=["Streaming"])
@@ -401,8 +432,16 @@ def detect_url_type(url: str) -> dict:
     raise HTTPException(status_code=400, detail="URL no válida. Solo YouTube y Spotify")
 
 @app.get("/videos", tags=["Videos"])
-def obtener_videos():
-    videos = video_engine.listar_videos()
+def obtener_videos(request: Request, page: Optional[int] = None, limit: Optional[int] = None):
+    if page is not None or limit is not None:
+        page = max(1, page or 1)
+        limit = min(max(1, limit or 20), 100)
+        offset = (page - 1) * limit
+        videos = video_engine.listar_videos(limit=limit, offset=offset)
+        total = video_engine.contar_videos()
+    else:
+        videos = video_engine.listar_videos()
+        total = len(videos)
     result = []
     for v in videos:
         data = dict(v.__dict__)
@@ -416,6 +455,16 @@ def obtener_videos():
             data["embed_url"] = None
             data["player_url"] = None
         result.append(data)
+    if page is not None or limit is not None:
+        return _etag_response({
+            "data": result,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total,
+                "pages": (total + limit - 1) // limit if total > 0 else 0
+            }
+        }, request)
     return result
 
 @app.post("/videos/add", tags=["Videos"])
@@ -485,7 +534,7 @@ async def _import_video_list(items: List[dict]) -> dict:
             video_id=item["video_id"],
             titulo=item.get("titulo", "Sin título"),
             canal_autor=item.get("canal_autor", ""),
-            tipo="youtube",
+            tipo=item.get("tipo", "youtube"),
             miniatura_url=item.get("miniatura_url") or None
         )
         db_id = video_engine.agregar_video(nuevo)
@@ -587,17 +636,26 @@ async def editar_video(id: int, video: Video):
 async def vitepress_middleware(request: Request, call_next):
     path = request.url.path
 
-    # Pasar por alto rutas de la API
+    docs_dir = VITEDOCS_DIST
+
+    # 1. Archivos HTML de VitePress se sirven directo (no pasan por API)
+    if path.endswith(".html") and os.path.isdir(docs_dir):
+        rel_path = path.lstrip("/")
+        file_path = os.path.join(docs_dir, rel_path or "index.html")
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+
+    # 2. Pasar por alto rutas de la API
     api_prefixes = (
         "/daily", "/list", "/info", "/search", "/guide",
         "/stream", "/videos", "/ws", "/admin", "/static",
         "/api-info", "/download", "/health", "/openapi",
-        "/docs", "/redoc"
+        "/docs", "/redoc", "/random", "/books"
     )
     if path.startswith(api_prefixes):
         return await call_next(request)
 
-    # Pasar por alto referencias bíblicas /{libro}/{numero}
+    # 3. Pasar por alto referencias bíblicas /{libro}/{numero}
     parts = [p for p in path.strip("/").split("/") if p]
     if len(parts) >= 2:
         try:
@@ -606,13 +664,8 @@ async def vitepress_middleware(request: Request, call_next):
         except ValueError:
             pass
 
-    # Servir desde el build de VitePress
-    docs_dir = VITEDOCS_DIST
+    # 4. SPA fallback: todo lo demás va a VitePress index.html
     if os.path.isdir(docs_dir):
-        rel_path = path.lstrip("/")
-        file_path = os.path.join(docs_dir, rel_path or "index.html")
-        if os.path.isfile(file_path):
-            return FileResponse(file_path)
         return FileResponse(os.path.join(docs_dir, "index.html"))
 
     return await call_next(request)
