@@ -1,4 +1,5 @@
 import logging
+import mimetypes
 import re
 import os
 import time
@@ -97,6 +98,11 @@ VITEDOCS_DIST = os.path.join(DOCS_UI_PATH, "docs", ".vitepress", "dist")
 
 STATIC_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
+
+# Servir assets e imágenes de VitePress con MIME types correctos
+app.mount("/assets", StaticFiles(directory=os.path.join(VITEDOCS_DIST, "assets")), name="vitepress-assets")
+app.mount("/img", StaticFiles(directory=os.path.join(VITEDOCS_DIST, "img")), name="vitepress-img")
+app.mount("/docs-ui", StaticFiles(directory=VITEDOCS_DIST, html=True), name="vitepress-docs-ui")
 
 @app.get("/api-info", tags=["Info"])
 def api_info():
@@ -635,27 +641,38 @@ async def editar_video(id: int, video: Video):
 @app.middleware("http")
 async def vitepress_middleware(request: Request, call_next):
     path = request.url.path
-
     docs_dir = VITEDOCS_DIST
 
-    # 1. Archivos HTML de VitePress se sirven directo (no pasan por API)
-    if path.endswith(".html") and os.path.isdir(docs_dir):
-        rel_path = path.lstrip("/")
-        file_path = os.path.join(docs_dir, rel_path or "index.html")
-        if os.path.isfile(file_path):
-            return FileResponse(file_path)
+    if not os.path.isdir(docs_dir):
+        return await call_next(request)
 
-    # 2. Pasar por alto rutas de la API
+    rel = path.lstrip("/")
+
+    # 1. Pasar por alto rutas de la API que no forman parte de la documentación
     api_prefixes = (
         "/daily", "/list", "/info", "/search", "/guide",
-        "/stream", "/videos", "/ws", "/admin", "/static",
+        "/stream", "/ws", "/admin", "/static",
         "/api-info", "/download", "/health", "/openapi",
-        "/docs", "/redoc", "/random", "/books"
+        "/docs", "/redoc", "/random", "/books",
+        "/assets", "/img"
     )
     if path.startswith(api_prefixes):
         return await call_next(request)
 
-    # 3. Pasar por alto referencias bíblicas /{libro}/{numero}
+    # 1a. Rutas de API específicas bajo /videos que deben mantenerse como API
+    if path == "/videos" or path == "/videos/" or path.startswith("/videos/import") or re.match(r"^/videos/\d+$", path):
+        return await call_next(request)
+
+    # 1b. Rutas de API /bible sólo cuando el segundo segmento es numérico
+    parts = [p for p in path.strip("/").split("/") if p]
+    if len(parts) >= 2 and parts[0] == "bible":
+        try:
+            int(parts[1])
+            return await call_next(request)
+        except ValueError:
+            pass
+
+    # 2. Pasar por alto referencias bíblicas /{libro}/{numero}
     parts = [p for p in path.strip("/").split("/") if p]
     if len(parts) >= 2:
         try:
@@ -664,9 +681,31 @@ async def vitepress_middleware(request: Request, call_next):
         except ValueError:
             pass
 
-    # 4. SPA fallback: todo lo demás va a VitePress index.html
-    if os.path.isdir(docs_dir):
-        return FileResponse(os.path.join(docs_dir, "index.html"))
+    # 3. Archivos estáticos exactos del build (CSS, JS, fuentes, imágenes)
+    file_path = os.path.join(docs_dir, rel)
+    if os.path.isfile(file_path):
+        return FileResponse(file_path, media_type=mimetypes.guess_type(path)[0])
 
+    # 3a. Archivos raíz extra de VitePress, como vp-icons.css
+    root_files = {"vp-icons.css", "404.html"}
+    if rel in root_files:
+        root_file_path = os.path.join(docs_dir, rel)
+        if os.path.isfile(root_file_path):
+            return FileResponse(root_file_path, media_type=mimetypes.guess_type(path)[0])
+
+    # 4. Clean URLs: /path → /path.html (VitePress renderiza cada .md como .html)
+    if not path.endswith(".html") and "." not in os.path.basename(path):
+        html_path = os.path.join(docs_dir, rel + ".html")
+        if os.path.isfile(html_path):
+            return FileResponse(html_path, media_type="text/html")
+
+    # 5. SPA fallback: solo para rutas de navegación (sin extensión)
+    basename = os.path.basename(path)
+    if "." not in basename:
+        index_path = os.path.join(docs_dir, "index.html")
+        if os.path.isfile(index_path):
+            return FileResponse(index_path, media_type="text/html")
+
+    # 6. Último recurso
     return await call_next(request)
 

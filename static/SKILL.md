@@ -821,7 +821,12 @@ Access the admin UI at `/admin` for managing radios and videos without code.
 
 ## Documentation
 
-Full interactive documentation available at `/documentation`.
+Full interactive documentation is served from the VitePress build at `/docs-ui/`.
+
+If the docs page loads without CSS/JS, verify:
+- `docs-ui/docs/.vitepress/config.mjs` has `base: '/docs-ui/'`
+- the FastAPI app mounts the generated VitePress dist under `/docs-ui`
+- legacy `docs-ui/index.html` does not conflict with the built site
 
 ## Brand Assets
 

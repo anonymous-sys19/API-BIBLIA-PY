@@ -15,7 +15,9 @@ class BibliaEngine:
 
     @contextmanager
     def _get_connection(self, version_id: Optional[str] = None):
-        v_id = version_id or self.default_version
+        v_id = (version_id or self.default_version).lower()
+        if v_id not in self.versions:
+            v_id = self.default_version
         conn = sqlite3.connect(self.versions[v_id])
         conn.row_factory = sqlite3.Row
         try:

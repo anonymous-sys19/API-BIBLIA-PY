@@ -4,47 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GhostRoot Bible API — Documentación</title>
-    
-    <!-- Favicons -->
-    <link rel="icon" type="image/svg+xml" href="static/img/icon.svg">
-    <link rel="icon" type="image/jpeg" href="static/img/icon.jpg">
-    <link rel="apple-touch-icon" href="static/img/icon.jpg">
-    
-    <link rel="stylesheet" href="/docs.css">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/kotlin.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/swift.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+    <meta http-equiv="refresh" content="0; url=/docs-ui/">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: system-ui, sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            text-align: center;
+            padding: 2rem;
+        }
+        a {
+            color: #38bdf8;
+        }
+        .card {
+            max-width: 640px;
+            background: rgba(15,23,42,.88);
+            border: 1px solid rgba(148,163,184,.16);
+            border-radius: 18px;
+            padding: 2rem;
+            box-shadow: 0 24px 80px rgba(15,23,42,.24);
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .5rem 1rem;
+            border-radius: 999px;
+            background: rgba(56,189,248,.16);
+            color: #cfe8ff;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+    </style>
 </head>
 <body>
-    <div class="docs-layout">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="brand">
-                    <img src="/static/img/icon.svg" alt="GhostRoot Bible API" class="brand-icon">
-                    <div class="brand-text">
-                        <h1>GhostRoot Bible API</h1>
-                        <span class="version">v1.0.0</span>
-                    </div>
-                </div>
-            </div>
-            
-            <nav class="sidebar-nav">
-                <div class="nav-section">
-                    <h3 class="nav-title">Inicio</h3>
-                    <ul class="nav-list">
-                        <li><a href="#introduction" class="nav-link active">Introducción</a></li>
-                        <li><a href="#authentication" class="nav-link">Autenticación</a></li>
-                        <li><a href="#rate-limiting" class="nav-link">Rate Limiting</a></li>
-                        <li><a href="#errors" class="nav-link">Errores</a></li>
-                    </ul>
-                </div>
+    <div class="card">
+        <div class="badge">Redirección de documentación</div>
+        <h1>GhostRoot Bible API</h1>
+        <p>La documentación actual se encuentra en el sitio generado por VitePress.</p>
+        <p>Si la redirección no funciona, <a href="docs/.vitepress/dist/">haz clic aquí para abrir la documentación</a>.</p>
+        <p>Este archivo `docs-ui/index.html` está obsoleto y ahora redirige a la versión actual.</p>
+    </div>
+</body>
+</html>
 
                 <div class="nav-section">
                     <h3 class="nav-title">Biblia</h3>
@@ -2775,4 +2782,4 @@ curl "https://api.tu-dominio.com/search/amor?version=pdt"</code></pre>
     </div>
 
     <script src="/docs.js"></script>
-</body>
+</body>

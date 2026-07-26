@@ -422,6 +422,15 @@ Deletes a video or audio track.
 { "mensaje": "Video eliminado" }
 ```
 
+## Documentation
+
+The interactive API documentation is served from the VitePress build at `/docs-ui/`.
+
+If developers see the docs HTML without styling or script behavior, the probable cause is a docs base path mismatch or a legacy docs page conflict. To fix it:
+- set `base: '/docs-ui/'` in `docs-ui/docs/.vitepress/config.mjs`
+- mount the generated VitePress dist directory at `/docs-ui` in `app/main.py`
+- avoid routing conflicts with `/assets`, `/img`, `/videos`, `/bible`, and other API prefixes
+
 ### Real-Time via WebSocket
 
 All mutations to streams and videos are broadcast in real-time to connected clients.

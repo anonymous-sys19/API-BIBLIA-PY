@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
+  base: '/docs-ui/',
   lang: 'es',
   title: 'GhostRoot Bible API',
   description: 'Documentación oficial de la API REST para gestión y exploración de las Sagradas Escrituras',
@@ -123,7 +124,7 @@ export default defineConfig({
       },
     ],
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/anomalyco/API-BIBLIA-PY' },
+      { icon: 'github', link: 'https://github.com/anonymous-sys19/API-BIBLIA-PY' },
     ],
     footer: {
       message: 'Documentación de GhostRoot Bible API',
