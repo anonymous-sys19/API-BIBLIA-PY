@@ -100,9 +100,11 @@ STATIC_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
 
 # Servir assets e imágenes de VitePress con MIME types correctos
-app.mount("/assets", StaticFiles(directory=os.path.join(VITEDOCS_DIST, "assets")), name="vitepress-assets")
-app.mount("/img", StaticFiles(directory=os.path.join(VITEDOCS_DIST, "img")), name="vitepress-img")
-app.mount("/docs-ui", StaticFiles(directory=VITEDOCS_DIST, html=True), name="vitepress-docs-ui")
+# (solo si el build existe; en Render el dist no se genera y no debe crashear el import)
+if os.path.isdir(VITEDOCS_DIST):
+    app.mount("/assets", StaticFiles(directory=os.path.join(VITEDOCS_DIST, "assets")), name="vitepress-assets")
+    app.mount("/img", StaticFiles(directory=os.path.join(VITEDOCS_DIST, "img")), name="vitepress-img")
+    app.mount("/docs-ui", StaticFiles(directory=VITEDOCS_DIST, html=True), name="vitepress-docs-ui")
 
 @app.get("/api-info", tags=["Info"])
 def api_info():
@@ -647,6 +649,10 @@ async def vitepress_middleware(request: Request, call_next):
         return await call_next(request)
 
     rel = path.lstrip("/")
+
+    # Seguridad: rechazar path traversal (..) antes de hacer join manual
+    if ".." in path or "\x00" in path:
+        raise HTTPException(status_code=404, detail="Not Found")
 
     # 1. Pasar por alto rutas de la API que no forman parte de la documentación
     api_prefixes = (

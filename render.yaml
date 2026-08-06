@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: ghostroot-bible-api
+    runtime: python
+    plan: free
+    region: oregon
+    preBuildCommand: cd docs-ui && npm install && npm run build
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
