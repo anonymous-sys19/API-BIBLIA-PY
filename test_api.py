@@ -40,6 +40,17 @@ class TestDocs:
         assert "endpoints" in data
         assert "versiones_disponibles" in data
 
+    def test_documentation_redirects_to_docs_ui(self):
+        response = client.get("/documentation", follow_redirects=False)
+        assert response.status_code in (301, 302, 307, 308)
+        assert response.headers["location"] in ("/docs-ui/", "/docs")
+
+    def test_documentation_follows_to_html(self):
+        response = client.get("/documentation")
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+        assert "GhostRoot Bible API" in response.text
+
 
 class TestDaily:
     def test_daily_default_version(self):
@@ -191,6 +202,14 @@ class TestSkillDownload:
         assert "text/markdown" in response.headers["content-type"]
         assert "attachment" in response.headers["content-disposition"]
         assert "ghostroot-bible-api-skill.md" in response.headers["content-disposition"]
+
+    def test_served_skill_matches_canonical(self):
+        canonical = PROJECT_ROOT / ".opencode" / "skills" / "ghostroot-bible-api" / "SKILL.md"
+        response = client.get("/download/skill")
+        assert response.status_code == 200
+        canonical_text = canonical.read_text(encoding="utf-8").replace("\r\n", "\n")
+        served_text = response.text.replace("\r\n", "\n")
+        assert canonical_text == served_text
 
 
 class TestGuia:

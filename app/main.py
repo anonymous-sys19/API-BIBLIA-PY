@@ -14,7 +14,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Requ
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from typing import Optional, List
 
 from app.db.database import BibliaEngine, StreamManager, VideoManager, GuiaManager
@@ -122,6 +122,13 @@ def download_skill():
         media_type="text/markdown",
         headers={"Content-Disposition": "attachment; filename=ghostroot-bible-api-skill.md"}
     )
+
+@app.get("/documentation", tags=["Docs"])
+def documentation_redirect():
+    """Documentación interactiva completa (build de VitePress)."""
+    if os.path.isdir(VITEDOCS_DIST):
+        return RedirectResponse("/docs-ui/")
+    return RedirectResponse("/docs")
 
 @app.get("/health", tags=["Health"])
 def health_check():
@@ -659,7 +666,7 @@ async def vitepress_middleware(request: Request, call_next):
         "/daily", "/list", "/info", "/search", "/guide",
         "/stream", "/ws", "/admin", "/static",
         "/api-info", "/download", "/health", "/openapi",
-        "/docs", "/redoc", "/random", "/books",
+        "/docs", "/redoc", "/random", "/books", "/documentation",
         "/assets", "/img"
     )
     if path.startswith(api_prefixes):

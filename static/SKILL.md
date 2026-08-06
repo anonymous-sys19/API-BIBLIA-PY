@@ -53,6 +53,11 @@ Downloads this SKILL.md file for integration with AI assistants.
 
 **Response:** Markdown file attachment.
 
+#### GET /documentation
+Redirects to the full interactive documentation. When the VitePress build is available it redirects to `/docs-ui/`; otherwise it falls back to Swagger UI at `/docs`.
+
+**Response:** `307 Temporary Redirect` to `/docs-ui/` (or `/docs`).
+
 ### Bible Endpoints
 
 #### GET /health
@@ -444,12 +449,17 @@ Imports **multiple** videos from a YouTube channel or playlist. Uses `yt-dlp` (n
 #### POST /videos/import/preview
 Returns a list of videos from a collection **without importing them**. Use this to let users select which videos to import.
 
-**Request Body:**
+The same operation is also available via `GET /videos/import/preview?url=...`.
+
+**Request Body (POST):**
 ```json
 {
   "url": "https://youtube.com/playlist?list=PLK13vpeAIKd..."
 }
 ```
+
+**Parameters (GET):**
+- `url` (query): Channel/playlist URL
 
 **Response:**
 ```json
@@ -821,7 +831,7 @@ Access the admin UI at `/admin` for managing radios and videos without code.
 
 ## Documentation
 
-Full interactive documentation is served from the VitePress build at `/docs-ui/`.
+Full interactive documentation is available at `/documentation`, which redirects to the VitePress build served at `/docs-ui/` (Swagger UI at `/docs` as fallback).
 
 If the docs page loads without CSS/JS, verify:
 - `docs-ui/docs/.vitepress/config.mjs` has `base: '/docs-ui/'`
