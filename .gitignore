@@ -7,6 +7,8 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+!docs-ui/docs/.vitepress/dist/
+!docs-ui/docs/.vitepress/dist/**
 downloads/
 eggs/
 .eggs/
@@ -68,5 +70,4 @@ htmlcov/
 
 # Node
 node_modules/
-docs-ui/.vitepress/dist/
 docs-ui/.vitepress/cache/
